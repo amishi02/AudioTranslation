@@ -4,17 +4,17 @@
 
 | Status | Count |
 |---|---:|
-| Completed | 0 |
+| Completed | 4 |
 | Partially Completed | 0 |
-| Remaining | 18 |
+| Remaining | 14 |
 | Blocked | 0 |
 | Total | 18 |
 
-Progress: 0%
+Progress: 22%
 
-Status: Not Started
+Status: In Progress
 
-Last Updated: 2026-09-14
+Last Updated: 2026-09-15
 
 Related documentation: `AGENTS.md`, `docs/architecture.md`, `docs/trd.md` §39-40, `docs/development.md`, `docs/srs.md` §7 (NFR-007), `docs/prd.md` §7
 
@@ -50,10 +50,10 @@ Establish the repository, development environment, and engineering conventions s
 
 ### Development / Foundation
 
-- [ ] P1-DEV-001 Normalize repository structure and confirm frontend/backend separation
-- [ ] P1-DEV-002 Create root `.gitignore` entries for `backend/.venv`, `frontend/**/node_modules`, `frontend/**/dist`, local `.env` files, coverage artifacts
-- [ ] P1-DEV-003 Add `backend/.env.example` with all Phase-1-visible env keys and defaults (no secrets)
-- [ ] P1-DEV-004 Add root development script/makefile (`Makefile` or `package.json` scripts) for `dev:backend`, `dev:frontend`, `lint`, `format`, `test`
+- [x] P1-DEV-001 Normalize repository structure and confirm frontend/backend separation
+- [x] P1-DEV-002 Create root `.gitignore` entries for `backend/.venv`, `frontend/**/node_modules`, `frontend/**/dist`, local `.env` files, coverage artifacts
+- [x] P1-DEV-003 Add `backend/.env.example` with all Phase-1-visible env keys and defaults (no secrets)
+- [x] P1-DEV-004 Add root development script/makefile (`Makefile` or `package.json` scripts) for `dev:backend`, `dev:frontend`, `lint`, `format`, `test`
 
 ### Backend
 
