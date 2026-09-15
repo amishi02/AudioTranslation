@@ -270,6 +270,17 @@ git reset --hard
 
 unless explicitly instructed.
 
+### Commit Authorization
+
+**No auto-commits.** Agents MUST NOT run `git commit`, `git commit --amend`, `git push`, or create PRs without explicit user confirmation in the current session.
+
+Before committing, the agent must:
+1. Present `git status` and `git diff --staged` (or full diff if not yet staged).
+2. State the proposed commit message and explain what the commit does.
+3. Ask for confirmation and wait for an explicit "yes" / "commit" / "proceed" from the user.
+
+Staging (`git add`) is allowed only to prepare a diff for review; it does not imply permission to commit. If the user says "no" or does not respond, do not commit.
+
 ### Commit Format
 
 All commits for implementation-plan work MUST use the following format:
