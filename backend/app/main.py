@@ -27,6 +27,12 @@ def create_app() -> FastAPI:
     Keeps api layer thin — no provider/model instantiation here.
     """
     configure_logging(settings.log_level)
+    logger.info(
+        "app_startup log_level=%s app_env=%s version=%s",
+        settings.log_level,
+        settings.app_env,
+        settings.app_version,
+    )
 
     app = FastAPI(
         title=settings.app_name,
