@@ -77,7 +77,7 @@ export function useAudioRecorder() {
 
   const startRecording = useCallback(
     async (onChunk, { wsStatusRef } = {}) => {
-      if (micStatus === "active" || micStatus === "requesting") return;
+      if (micStatus === "active" || micStatus === "requesting") return false;
       setMicStatus("requesting");
       setError(null);
       resetAccumulator();
@@ -96,7 +96,7 @@ export function useAudioRecorder() {
           setMicStatus("error");
           setError(e.message || "Failed to access microphone");
         }
-        return;
+        return false;
       }
 
       let ctx;
@@ -109,7 +109,7 @@ export function useAudioRecorder() {
         stream.getTracks().forEach((t) => t.stop());
         setMicStatus("error");
         setError(e.message || "Audio not supported in this browser");
-        return;
+        return false;
       }
 
       streamRef.current = stream;
@@ -177,13 +177,20 @@ export function useAudioRecorder() {
       });
 
       setMicStatus("active");
+      return true;
     },
     [micStatus, resetAccumulator]
   );
 
+  const clearError = useCallback(() => {
+    setError(null);
+    if (micStatus === "permission_denied" || micStatus === "error") setMicStatus("idle");
+  }, [micStatus]);
+
   return {
     micStatus,
     error,
+    clearError,
     startRecording,
     stopRecording,
     getAudioConfig: () => (ctxRef.current ? getAudioConfig(ctxRef.current) : getAudioConfig(null)),

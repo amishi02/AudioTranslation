@@ -18,6 +18,7 @@ export default function AppShell({
   connectionError = null,
   bannerMessage = null,
   onRetry,
+  onDismiss,
   // transcript / translation
   transcriptSegments = [],
   transcriptActive = null,
@@ -45,7 +46,7 @@ export default function AppShell({
         <p className="app-subtitle">Speak and see live transcript + translation</p>
       </header>
 
-      {bannerMessage && <StatusBanner message={bannerMessage} onRetry={onRetry} />}
+      {bannerMessage && <StatusBanner message={bannerMessage} onRetry={onRetry} onDismiss={onDismiss} />}
 
       <section className="controls-section">
         <LanguageSelector

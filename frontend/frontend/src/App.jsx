@@ -93,22 +93,21 @@ function App() {
   const handleStart = async () => {
     if (!effectiveCanStart) return;
     setWsError(null);
+    audio.clearError();
     session.setConnection(CONNECTION_STATES.CONNECTING);
     ws.startSession({ sourceLanguage, targetLanguage });
-    // Start mic capture — onChunk sends raw PCM via WS
-    // Respect backpressure via wsStatusRef
-    await audio.startRecording(
+    const ok = await audio.startRecording(
       (buffer) => {
-        // buffer is ArrayBuffer (PCM S16LE 1920 bytes)
         ws.sendAudio(buffer);
       },
       { wsStatusRef }
     );
-    if (audio.micStatus === "permission_denied" || audio.micStatus === "error") {
-      // Prevent hanging session without audio
-      // Keep banner via audio.error
-    } else if (audio.micStatus === "active") {
+    if (ok) {
       session.setConnection(CONNECTION_STATES.LISTENING);
+    } else {
+      // Permission denied or mic error — keep banner, stop WS session to avoid hanging
+      ws.stopSession();
+      session.setConnection(CONNECTION_STATES.IDLE);
     }
   };
 
@@ -141,6 +140,13 @@ function App() {
     }
   };
 
+  const handleDismissBanner = () => {
+    setWsError(null);
+    setHealthError(null);
+    audio.clearError();
+    setBackendHealthy(true);
+  };
+
   const audioBanner = audio.error || (audio.micStatus === "permission_denied" ? "Microphone access is required to start translation. Allow in browser settings and try again." : null);
   const bannerMessage = wsError || audioBanner || (!backendHealthy ? healthError || "Unable to connect to translation service" : null);
 
@@ -166,7 +172,7 @@ function App() {
 
   return (
     <>
-      <AudioControls micStatus={audio.micStatus} micError={audio.error} />
+      <AudioControls micStatus={audio.micStatus} />
       <AppShell
         sourceLanguage={sourceLanguage}
         targetLanguage={targetLanguage}
@@ -177,6 +183,7 @@ function App() {
         connectionError={wsError || healthError || audio.error}
         bannerMessage={bannerMessage}
         onRetry={handleRetryHealth}
+        onDismiss={handleDismissBanner}
         transcriptSegments={transcriptSegments}
         transcriptActive={session.activeSegment}
         translationSegments={translationSegments}

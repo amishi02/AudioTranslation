@@ -9,7 +9,9 @@ def test_audio_spam_no_crash_and_backpressure():
     """Spam 100 binary frames rapidly — should not crash, queue handles."""
     client = TestClient(app)
     with client.websocket_connect("/ws/v1/translate") as ws:
-        ws.send_json({"type": "start", "source_language": "en", "target_language": "hi"})
+        ws.send_json(
+            {"type": "start", "source_language": "en", "target_language": "hi"}
+        )
         msg = ws.receive_json()
         assert msg["type"] == "session.ready"
 
@@ -43,7 +45,9 @@ def test_audio_invalid_frames():
     """P5-BE-001: invalid frames return INVALID_AUDIO_DATA without disconnect."""
     client = TestClient(app)
     with client.websocket_connect("/ws/v1/translate") as ws:
-        ws.send_json({"type": "start", "source_language": "en", "target_language": "hi"})
+        ws.send_json(
+            {"type": "start", "source_language": "en", "target_language": "hi"}
+        )
         ws.receive_json()
         # Odd length
         ws.send_bytes(b"\x01\x02\x03")

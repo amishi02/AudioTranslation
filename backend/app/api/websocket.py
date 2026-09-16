@@ -209,7 +209,7 @@ async def translate_ws(websocket: WebSocket) -> None:
                 if session_opt is None:
                     await _send_error(websocket, "SESSION_ERROR", "Session not found")
                     continue
-                # Enqueue with backpressure P4-WS-010
+                # Enqueue with backpressure + queue depth (P4-WS-010, P5-BE-003)
                 try:
                     session_opt.audio_queue.put_nowait(frame)
                     session_opt.frames_received += 1
@@ -217,8 +217,23 @@ async def translate_ws(websocket: WebSocket) -> None:
                     import time as _t
 
                     session_opt.last_frame_at = _t.time()
+                    # DEBUG every 20 frames for observability without spamming
+                    if session_opt.frames_received % 20 == 0:
+                        logger.debug(
+                            "audio_queue qsize=%s frames=%s bytes=%s session_id=%s",
+                            session_opt.audio_queue.qsize(),
+                            session_opt.frames_received,
+                            session_opt.bytes_received,
+                            current_session_id,
+                        )
                 except asyncio.QueueFull:
                     session_opt.dropped_frames += 1
+                    logger.debug(
+                        "audio_queue full dropped_frames=%s qsize=%s session_id=%s",
+                        session_opt.dropped_frames,
+                        session_opt.audio_queue.qsize(),
+                        current_session_id,
+                    )
                     await _send_error(
                         websocket, "RATE_LIMITED", "Audio queue full, dropping chunk"
                     )
