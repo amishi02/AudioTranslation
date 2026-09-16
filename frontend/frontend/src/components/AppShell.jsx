@@ -30,6 +30,7 @@ export default function AppShell({
   onStart,
   onStop,
   isActive = false,
+  micStatus = "idle",
 }) {
   const startDisabled = !canStart || !backendHealthy;
   let startReason = "";
@@ -54,7 +55,7 @@ export default function AppShell({
           onTargetChange={onTargetChange}
           supportedLanguages={supportedLanguages}
         />
-        <ConnectionStatus status={connectionStatus} error={connectionError} />
+        <ConnectionStatus status={connectionStatus} error={connectionError} micStatus={micStatus} />
         <div className="controls-row">
           {!isActive ? (
             <button

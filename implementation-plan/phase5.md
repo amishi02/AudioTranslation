@@ -4,17 +4,17 @@
 
 | Status | Count |
 |---|---:|
-| Completed | 0 |
-| Partially Completed | 0 |
-| Remaining | 31 |
+| Completed | 30 |
+| Partially Completed | 1 |
+| Remaining | 0 |
 | Blocked | 0 |
 | Total | 31 |
 
-Progress: 0%
+Progress: 97%
 
-Status: Not Started
+Status: In Progress
 
-Last Updated: 2026-09-14
+Last Updated: 2026-09-16
 
 Related documentation: `docs/srs.md` §9 (audio requirements), §4.1 (high-level arch: AudioWorklet→PCM→WS), `docs/trd.md` §7-8 (audio processing & buffering), `docs/Translation.md` §6 (browser audio capture), `docs/prd.md` §23 (audio requirements), `docs/architecture.md` (WebSocket→Audio Processing)
 
@@ -50,51 +50,51 @@ Implement the end-to-end browser audio pipeline: microphone permission → Audio
 
 ### Frontend — Microphone & AudioWorklet
 
-- [ ] P5-AUDIO-001 Create `src/services/audio.js` helpers: `requestMicrophone()`, `createAudioContext(targetSampleRate)`, `attachWorklet(audioContext)` with error handling for permission denied/unavailable
-- [ ] P5-AUDIO-002 Create `public/audio-processor.js` or `src/worklets/audioProcessor.worklet.js` (AudioWorkletProcessor) capturing input channel 0, buffering to `Float32Array`, posting messages with `port.postMessage`
-- [ ] P5-AUDIO-003 Register AudioWorklet via `audioContext.audioWorklet.addModule(url)` with fallback error handling for unsupported browsers
-- [ ] P5-AUDIO-004 Implement mono conversion (mix or channel-0) — document chosen strategy — for stereo mic input
-- [ ] P5-AUDIO-005 Implement 16-bit PCM S16LE conversion: `float32 [-1,1] → int16 [-32768,32767]` clamping helper
-- [ ] P5-AUDIO-006 Implement client-side sample-rate handling: detect `audioContext.sampleRate`, resample to 16 kHz if hardware rate differs (simple ratio or `OfflineAudioContext`/worklet resampling; document algorithm and trade-off)
-- [ ] P5-AUDIO-007 Implement browser-side chunking: configurable `CHUNK_MS` (default 60 ms) and `CHUNK_SAMPLES = 16000 * CHUNK_MS / 1000`; buffer partial input blocks until full chunk, then emit `ArrayBuffer`
-- [ ] P5-AUDIO-008 Expose `getAudioConfig()` returning actual `sampleRate`, `channelCount`, `chunkMs`, `chunkBytes` for backend negotiation/debug
-- [ ] P5-AUDIO-009 Implement microphone lifecycle: `startCapture(onChunk)`, `stopCapture()` releasing `MediaStreamTrack.stop()`, `AudioContext.close()`, awaiting `processor.port` close
+- [x] P5-AUDIO-001 Create `src/services/audio.js` helpers: `requestMicrophone()`, `createAudioContext(targetSampleRate)`, `attachWorklet(audioContext)` with error handling for permission denied/unavailable
+- [x] P5-AUDIO-002 Create `public/audio-processor.js` or `src/worklets/audioProcessor.worklet.js` (AudioWorkletProcessor) capturing input channel 0, buffering to `Float32Array`, posting messages with `port.postMessage`
+- [x] P5-AUDIO-003 Register AudioWorklet via `audioContext.audioWorklet.addModule(url)` with fallback error handling for unsupported browsers
+- [x] P5-AUDIO-004 Implement mono conversion (mix or channel-0) — document chosen strategy — for stereo mic input
+- [x] P5-AUDIO-005 Implement 16-bit PCM S16LE conversion: `float32 [-1,1] → int16 [-32768,32767]` clamping helper
+- [x] P5-AUDIO-006 Implement client-side sample-rate handling: detect `audioContext.sampleRate`, resample to 16 kHz if hardware rate differs (simple ratio or `OfflineAudioContext`/worklet resampling; document algorithm and trade-off)
+- [x] P5-AUDIO-007 Implement browser-side chunking: configurable `CHUNK_MS` (default 60 ms) and `CHUNK_SAMPLES = 16000 * CHUNK_MS / 1000`; buffer partial input blocks until full chunk, then emit `ArrayBuffer`
+- [x] P5-AUDIO-008 Expose `getAudioConfig()` returning actual `sampleRate`, `channelCount`, `chunkMs`, `chunkBytes` for backend negotiation/debug
+- [x] P5-AUDIO-009 Implement microphone lifecycle: `startCapture(onChunk)`, `stopCapture()` releasing `MediaStreamTrack.stop()`, `AudioContext.close()`, awaiting `processor.port` close
 
 ### Frontend — Streaming Integration
 
-- [ ] P5-AUDIO-010 Create `src/hooks/useAudioRecorder.js`: state `micStatus` (idle|requesting|active|error|permission_denied), exposes `startRecording()`, `stopRecording()`, `onChunk` callback; respects `session.status === 'active'`
-- [ ] P5-AUDIO-011 Wire `useAudioRecorder` → `useWebSocket.sendAudio(buffer)` until `session.stop`; batch send without extra JSON header (raw PCM bytes per frame)
-- [ ] P5-AUDIO-012 Handle mic permission-denied flow: show actionable message ("Microphone access is required… Allow in browser settings") and prevent session from staying 'active' without audio
-- [ ] P5-AUDIO-013 Implement mute/silence detection: do not send all-zero chunks in rapid succession if model feeding should be paused (optional optimization; document if skipped)
-- [ ] P5-AUDIO-014 Add backpressure cooperation: if `ws.readyState !== OPEN`, pause worklet posting or drop chunk locally and log `dropped_chunk_backpressure`
-- [ ] P5-AUDIO-015 Document why each transformation is required (PCM, mono, 16 kHz, chunking) in `src/services/audio.js` header comments
+- [x] P5-AUDIO-010 Create `src/hooks/useAudioRecorder.js`: state `micStatus` (idle|requesting|active|error|permission_denied), exposes `startRecording()`, `stopRecording()`, `onChunk` callback; respects `session.status === 'active'`
+- [x] P5-AUDIO-011 Wire `useAudioRecorder` → `useWebSocket.sendAudio(buffer)` until `session.stop`; batch send without extra JSON header (raw PCM bytes per frame)
+- [x] P5-AUDIO-012 Handle mic permission-denied flow: show actionable message ("Microphone access is required… Allow in browser settings") and prevent session from staying 'active' without audio
+- [~] P5-AUDIO-013 Implement mute/silence detection: do not send all-zero chunks in rapid succession if model feeding should be paused (optional optimization; document if skipped)
+- [x] P5-AUDIO-014 Add backpressure cooperation: if `ws.readyState !== OPEN`, pause worklet posting or drop chunk locally and log `dropped_chunk_backpressure`
+- [x] P5-AUDIO-015 Document why each transformation is required (PCM, mono, 16 kHz, chunking) in `src/services/audio.js` header comments
 
 ### Backend — Audio Reception & Validation
 
-- [ ] P5-BE-001 Add audio validation inside WS receive path: frame must be binary, `min_bytes <= len <= max_bytes`, even byte length (S16LE), non-empty; else → `error` `INVALID_AUDIO_DATA`
-- [ ] P5-BE-002 Add session audio stats: `frames_received`, `bytes_received`, `dropped_frames`, `last_frame_at` for observability
-- [ ] P5-BE-003 Make audio queue depth observable (log at `DEBUG` every N frames or on backpressure event)
-- [ ] P5-BE-004 Add config docs: `AUDIO_TARGET_SAMPLE_RATE=16000`, `AUDIO_CHANNELS=1`, `AUDIO_CHUNK_MS=60`, `AUDIO_FORMAT=pcm_s16le`, `MAX_AUDIO_FRAME_BYTES`
+- [x] P5-BE-001 Add audio validation inside WS receive path: frame must be binary, `min_bytes <= len <= max_bytes`, even byte length (S16LE), non-empty; else → `error` `INVALID_AUDIO_DATA`
+- [x] P5-BE-002 Add session audio stats: `frames_received`, `bytes_received`, `dropped_frames`, `last_frame_at` for observability
+- [x] P5-BE-003 Make audio queue depth observable (log at `DEBUG` every N frames or on backpressure event)
+- [x] P5-BE-004 Add config docs: `AUDIO_TARGET_SAMPLE_RATE=16000`, `AUDIO_CHANNELS=1`, `AUDIO_CHUNK_MS=60`, `AUDIO_FORMAT=pcm_s16le`, `MAX_AUDIO_FRAME_BYTES`
 
 ### Components / UX
 
-- [ ] P5-FE-001 Create/update `src/components/AudioControls.jsx` (mic status indicator, Start/Stop button wiring, permission error rendering)
-- [ ] P5-FE-002 Update `src/components/ConnectionStatus.jsx` to include mic status subline (e.g., "Listening…" when mic is active)
-- [ ] P5-FE-003 Add loading/permission prompt overlay or inline banner before first `getUserMedia` call
+- [x] P5-FE-001 Create/update `src/components/AudioControls.jsx` (mic status indicator, Start/Stop button wiring, permission error rendering)
+- [x] P5-FE-002 Update `src/components/ConnectionStatus.jsx` to include mic status subline (e.g., "Listening…" when mic is active)
+- [x] P5-FE-003 Add loading/permission prompt overlay or inline banner before first `getUserMedia` call
 
 ### Integration
 
-- [ ] P5-INT-001 End-to-end: Start → mic permission → audio flowing → backend queue depth increases (verified by log or WS metrics event)
-- [ ] P5-INT-002 Stop → `MediaStreamTrack.stop` + `AudioContext.close` + WS `session.stop`; confirm no leaked tracks/contexts
-- [ ] P5-INT-003 Disconnect mid-speech → mic stops and session cleans up; revisiting Start cleanly re-requests mic if needed
+- [x] P5-INT-001 End-to-end: Start → mic permission → audio flowing → backend queue depth increases (verified by log or WS metrics event)
+- [x] P5-INT-002 Stop → `MediaStreamTrack.stop` + `AudioContext.close` + WS `session.stop`; confirm no leaked tracks/contexts
+- [x] P5-INT-003 Disconnect mid-speech → mic stops and session cleans up; revisiting Start cleanly re-requests mic if needed
 
 ### Testing
 
-- [ ] P5-TEST-001 Frontend unit: `audio.js` PCM conversion correctness (known Float32 inputs → expected Int16 bytes)
-- [ ] P5-TEST-002 Frontend unit: chunking helper (arbitrary input lengths → exact `CHUNK_SAMPLES`-sized outputs + leftover handling)
-- [ ] P5-TEST-003 Frontend unit: mono conversion (stereo mock input → channel-0 or mixed output path)
-- [ ] P5-TEST-004 Frontend integration (JS mock): `useAudioRecorder` start/stop lifecycle with mocked `AudioWorklet` + `getUserMedia`
-- [ ] P5-TEST-005 Backend integration: spam binary frames and verify bounded queue + stats + backpressure signal path
+- [x] P5-TEST-001 Frontend unit: `audio.js` PCM conversion correctness (known Float32 inputs → expected Int16 bytes)
+- [x] P5-TEST-002 Frontend unit: chunking helper (arbitrary input lengths → exact `CHUNK_SAMPLES`-sized outputs + leftover handling)
+- [x] P5-TEST-003 Frontend unit: mono conversion (stereo mock input → channel-0 or mixed output path)
+- [x] P5-TEST-004 Frontend integration (JS mock): `useAudioRecorder` start/stop lifecycle with mocked `AudioWorklet` + `getUserMedia`
+- [x] P5-TEST-005 Backend integration: spam binary frames and verify bounded queue + stats + backpressure signal path
 
 ---
 
@@ -201,13 +201,13 @@ Backend:
 
 ## 10. Acceptance Criteria
 
-- [ ] Mic permission is requested on Start; denial shows actionable error and does not leave session in hanging `active`.
-- [ ] AudioWorklet captures microphone input continuously; `AudioContext` and `MediaStreamTrack` are closed on Stop/disconnect with no leaked tracks.
-- [ ] Audio is converted to PCM S16LE mono at configured rate (default 16 kHz) and framed as ~20–100 ms chunks (default 60 ms) — documented byte size.
-- [ ] Binary chunks are sent as raw WS frames without JSON wrapping; frontend pauses/drops when WS is not OPEN.
-- [ ] Backend validates binary frames (type, even length, size bounds) and returns `INVALID_AUDIO_DATA` for violations without disconnecting.
-- [ ] Queue depth and audio stats are observable for later performance work.
-- [ ] All new frontend/backend audio tests pass; lint/build still green.
+- [x] Mic permission is requested on Start; denial shows actionable error and does not leave session in hanging `active`.
+- [x] AudioWorklet captures microphone input continuously; `AudioContext` and `MediaStreamTrack` are closed on Stop/disconnect with no leaked tracks.
+- [x] Audio is converted to PCM S16LE mono at configured rate (default 16 kHz) and framed as ~20–100 ms chunks (default 60 ms) — documented byte size.
+- [x] Binary chunks are sent as raw WS frames without JSON wrapping; frontend pauses/drops when WS is not OPEN.
+- [x] Backend validates binary frames (type, even length, size bounds) and returns `INVALID_AUDIO_DATA` for violations without disconnecting.
+- [x] Queue depth and audio stats are observable for later performance work.
+- [x] All new frontend/backend audio tests pass; lint/build still green.
 
 ## 11. Verification Procedure
 
@@ -253,10 +253,10 @@ PY
 ## 14. Phase Completion Status
 
 - Total tasks: 31
-- Completed tasks: 0
-- Partially completed tasks: 0
-- Remaining tasks: 31
+- Completed tasks: 30
+- Partially completed tasks: 1
+- Remaining tasks: 0
 - Blocked tasks: 0
-- Overall progress: 0%
-- Acceptance criteria status: 0 / 7 satisfied
+- Overall progress: 97%
+- Acceptance criteria status: 7 / 7 satisfied
 

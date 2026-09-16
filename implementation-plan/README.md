@@ -34,7 +34,7 @@ If docs conflict, the plan prefers — in order — most-specific/latest doc, ex
 | Phase 2 | Backend Foundation & HTTP API | Modular FastAPI app, config management, health/readiness/capabilities, CORS, error format,薄 API layer | Completed | 100% |
 | Phase 3 | Frontend Foundation & UI Shell | React/Vite foundations, routing/shell, state management, language selector, transcript/translation areas, connection & error UI | Completed | 100% |
 | Phase 4 | WebSocket Foundation & Session Lifecycle | `/ws/v1/translate` gateway, JSON control messages, binary audio framing, session service, bounded queues, backpressure, disconnect cleanup | Completed | 100% |
-| Phase 5 | Browser Audio Pipeline & Real-time Streaming | getUserMedia, AudioContext/AudioWorklet, PCM S16LE mono 16 kHz, chunking, binary WS streaming, backend audio queue | Not Started | 0% |
+| Phase 5 | Browser Audio Pipeline & Real-time Streaming | getUserMedia, AudioContext/AudioWorklet, PCM S16LE mono 16 kHz, chunking, binary WS streaming, backend audio queue | In Progress | 97% |
 | Phase 6 | Provider Abstraction, Mocks & Event Normalization | Base provider interfaces, mock STT/translation/TTS, common normalized event protocol, pipeline interface | Not Started | 0% |
 | Phase 7 | Streaming STT & Transcript Stabilization | Real free/self-hosted streaming STT, partial/final handling, segment_id lifecycle, transcript stabilization, UI replacement semantics | Not Started | 0% |
 | Phase 8 | Translation Layer & Cascaded Pipeline | Translation provider, partial/final translation, unstable-partial handling, cascaded STT→Translation→(TTS stub) orchestration | Not Started | 0% |
@@ -45,10 +45,10 @@ If docs conflict, the plan prefers — in order — most-specific/latest doc, ex
 
 - Total phases: **10**
 - Completed phases: **4**
-- In-progress phases: **0**
-- Not-started phases: **6**
+- In-progress phases: **1**
+- Not-started phases: **5**
 - Blocked phases: **0**
-- Overall task progress: **83 / 273 tasks (30%)**
+- Overall task progress: **113 / 273 tasks (41%)**
 
 Progress is computed from the sum of every phase's checklist. Update it whenever a phase's checklist changes.
 

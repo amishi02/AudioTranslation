@@ -1,9 +1,11 @@
 import React from "react"; // eslint-disable-line no-unused-vars
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import AppShell from "./components/AppShell.jsx";
+import AudioControls from "./components/AudioControls.jsx";
 import { useLanguageSelection } from "./hooks/useLanguageSelection.js";
 import { useSessionState } from "./hooks/useSessionState.js";
 import { useWebSocket } from "./hooks/useWebSocket.js";
+import { useAudioRecorder } from "./hooks/useAudioRecorder.js";
 import { fetchCapabilities, fetchHealth } from "./services/api.js";
 import { CONNECTION_STATES } from "./utils/constants.js";
 import "./App.css";
@@ -24,6 +26,7 @@ function App() {
 
   const session = useSessionState();
   const [wsError, setWsError] = useState(null);
+  const audio = useAudioRecorder();
 
   const ws = useWebSocket({
     onSessionReady: (event) => {
@@ -74,21 +77,59 @@ function App() {
 
   const effectiveCanStart = langCanStart && backendHealthy;
 
-  // Derive isActive from WS status for Phase 4
-  const isActiveWs = ws.status === CONNECTION_STATES.LISTENING || ws.status === CONNECTION_STATES.READY || ws.status === CONNECTION_STATES.CONNECTING;
-  const isActive = isActiveWs || false;
+  // Track WS status for audio backpressure
+  const wsStatusRef = useRef(ws.status);
+  useEffect(() => {
+    wsStatusRef.current = ws.status;
+  }, [ws.status]);
 
-  const handleStart = () => {
+  // Derive isActive from WS + mic status (Phase 5)
+  const isActiveWs =
+    ws.status === CONNECTION_STATES.LISTENING ||
+    ws.status === CONNECTION_STATES.READY ||
+    ws.status === CONNECTION_STATES.CONNECTING;
+  const isActive = isActiveWs || audio.micStatus === "active";
+
+  const handleStart = async () => {
     if (!effectiveCanStart) return;
     setWsError(null);
     session.setConnection(CONNECTION_STATES.CONNECTING);
     ws.startSession({ sourceLanguage, targetLanguage });
+    // Start mic capture — onChunk sends raw PCM via WS
+    // Respect backpressure via wsStatusRef
+    await audio.startRecording(
+      (buffer) => {
+        // buffer is ArrayBuffer (PCM S16LE 1920 bytes)
+        ws.sendAudio(buffer);
+      },
+      { wsStatusRef }
+    );
+    if (audio.micStatus === "permission_denied" || audio.micStatus === "error") {
+      // Prevent hanging session without audio
+      // Keep banner via audio.error
+    } else if (audio.micStatus === "active") {
+      session.setConnection(CONNECTION_STATES.LISTENING);
+    }
   };
 
-  const handleStop = () => {
+  const handleStop = async () => {
+    await audio.stopRecording();
     ws.stopSession();
     session.setConnection(CONNECTION_STATES.IDLE);
   };
+
+  // If WS disconnects mid-speech, stop mic
+  useEffect(() => {
+    if (
+      ws.status === CONNECTION_STATES.DISCONNECTED ||
+      ws.status === CONNECTION_STATES.ERROR ||
+      ws.status === CONNECTION_STATES.IDLE
+    ) {
+      if (audio.micStatus === "active") {
+        audio.stopRecording();
+      }
+    }
+  }, [ws.status, audio.micStatus]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleRetryHealth = async () => {
     try {
@@ -100,7 +141,8 @@ function App() {
     }
   };
 
-  const bannerMessage = wsError || (!backendHealthy ? healthError || "Unable to connect to translation service" : null);
+  const audioBanner = audio.error || (audio.micStatus === "permission_denied" ? "Microphone access is required to start translation. Allow in browser settings and try again." : null);
+  const bannerMessage = wsError || audioBanner || (!backendHealthy ? healthError || "Unable to connect to translation service" : null);
 
   const wsStatus = ws.status;
   const connectionStatus = !backendHealthy
@@ -123,36 +165,40 @@ function App() {
   }));
 
   return (
-    <AppShell
-      sourceLanguage={sourceLanguage}
-      targetLanguage={targetLanguage}
-      onSourceChange={setSource}
-      onTargetChange={setTarget}
-      supportedLanguages={supportedLanguages}
-      connectionStatus={connectionStatus}
-      connectionError={wsError || healthError}
-      bannerMessage={bannerMessage}
-      onRetry={handleRetryHealth}
-      transcriptSegments={transcriptSegments}
-      transcriptActive={session.activeSegment}
-      translationSegments={translationSegments}
-      translationActive={
-        session.activeSegment
-          ? {
-              id: session.activeSegment.id,
-              translatedText: `[${session.activeSegment.text}]`,
-              sourceText: session.activeSegment.text,
-              status: session.activeSegment.status,
-            }
-          : null
-      }
+    <>
+      <AudioControls micStatus={audio.micStatus} micError={audio.error} />
+      <AppShell
+        sourceLanguage={sourceLanguage}
+        targetLanguage={targetLanguage}
+        onSourceChange={setSource}
+        onTargetChange={setTarget}
+        supportedLanguages={supportedLanguages}
+        connectionStatus={connectionStatus}
+        connectionError={wsError || healthError || audio.error}
+        bannerMessage={bannerMessage}
+        onRetry={handleRetryHealth}
+        transcriptSegments={transcriptSegments}
+        transcriptActive={session.activeSegment}
+        translationSegments={translationSegments}
+        translationActive={
+          session.activeSegment
+            ? {
+                id: session.activeSegment.id,
+                translatedText: `[${session.activeSegment.text}]`,
+                sourceText: session.activeSegment.text,
+                status: session.activeSegment.status,
+              }
+            : null
+        }
       canStart={effectiveCanStart}
       validationError={validationError}
       backendHealthy={backendHealthy}
       onStart={handleStart}
       onStop={handleStop}
       isActive={isActive}
-    />
+      micStatus={audio.micStatus}
+      />
+    </>
   );
 }
 

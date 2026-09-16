@@ -21,7 +21,7 @@ const STATUS_CLASS = {
   [CONNECTION_STATES.DISCONNECTED]: "status-disconnected",
 };
 
-export default function ConnectionStatus({ status, error }) {
+export default function ConnectionStatus({ status, error, micStatus }) {
   const text = STATUS_TEXT[status] || status;
   const cls = STATUS_CLASS[status] || "status-idle";
   return (
@@ -32,6 +32,8 @@ export default function ConnectionStatus({ status, error }) {
       data-status={status}
     >
       <span className="status-text">{text}</span>
+      {micStatus === "active" && <span className="mic-subline" data-testid="mic-status"> — Mic active</span>}
+      {micStatus === "requesting" && <span className="mic-subline"> — Requesting mic…</span>}
       {error && <span className="status-error-text"> — {error}</span>}
     </div>
   );
