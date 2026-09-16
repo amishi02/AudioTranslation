@@ -4,15 +4,15 @@
 
 | Status | Count |
 |---|---:|
-| Completed | 30 |
-| Partially Completed | 1 |
+| Completed | 31 |
+| Partially Completed | 0 |
 | Remaining | 0 |
 | Blocked | 0 |
 | Total | 31 |
 
-Progress: 97%
+Progress: 100%
 
-Status: In Progress
+Status: Completed
 
 Last Updated: 2026-09-16
 
@@ -65,7 +65,7 @@ Implement the end-to-end browser audio pipeline: microphone permission → Audio
 - [x] P5-AUDIO-010 Create `src/hooks/useAudioRecorder.js`: state `micStatus` (idle|requesting|active|error|permission_denied), exposes `startRecording()`, `stopRecording()`, `onChunk` callback; respects `session.status === 'active'`
 - [x] P5-AUDIO-011 Wire `useAudioRecorder` → `useWebSocket.sendAudio(buffer)` until `session.stop`; batch send without extra JSON header (raw PCM bytes per frame)
 - [x] P5-AUDIO-012 Handle mic permission-denied flow: show actionable message ("Microphone access is required… Allow in browser settings") and prevent session from staying 'active' without audio
-- [~] P5-AUDIO-013 Implement mute/silence detection: do not send all-zero chunks in rapid succession if model feeding should be paused (optional optimization; document if skipped)
+- [x] P5-AUDIO-013 Implement mute/silence detection: do not send all-zero chunks in rapid succession if model feeding should be paused (optional optimization; document if skipped) — documented as skipped in src/services/audio.js (Phase 5 sends all chunks; acceptable per spec)
 - [x] P5-AUDIO-014 Add backpressure cooperation: if `ws.readyState !== OPEN`, pause worklet posting or drop chunk locally and log `dropped_chunk_backpressure`
 - [x] P5-AUDIO-015 Document why each transformation is required (PCM, mono, 16 kHz, chunking) in `src/services/audio.js` header comments
 
@@ -253,10 +253,10 @@ PY
 ## 14. Phase Completion Status
 
 - Total tasks: 31
-- Completed tasks: 30
-- Partially completed tasks: 1
+- Completed tasks: 31
+- Partially completed tasks: 0
 - Remaining tasks: 0
 - Blocked tasks: 0
-- Overall progress: 97%
+- Overall progress: 100%
 - Acceptance criteria status: 7 / 7 satisfied
 
