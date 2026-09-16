@@ -4,17 +4,17 @@
 
 | Status | Count |
 |---|---:|
-| Completed | 0 |
+| Completed | 29 |
 | Partially Completed | 0 |
-| Remaining | 29 |
+| Remaining | 0 |
 | Blocked | 0 |
 | Total | 29 |
 
-Progress: 0%
+Progress: 100%
 
-Status: Not Started
+Status: Completed
 
-Last Updated: 2026-09-14
+Last Updated: 2026-09-16
 
 Related documentation: `docs/websocket-protocol.md`, `docs/srs.md` §4-6, §13-19 (session, event protocol), `docs/trd.md` §6.3-6.4, §36-38, `docs/prd.md` §16-17 (translation session, states), `AGENTS.md` (WebSockets are the primary mechanism)
 
@@ -51,45 +51,45 @@ Implement the documented WebSocket foundation at `/ws/v1/translate` with full se
 
 ### WebSocket / Backend
 
-- [ ] P4-WS-001 Create `backend/app/api/websocket.py` router with `GET /ws/v1/translate` handler (thin: validate, delegate to session service, loop)
-- [ ] P4-WS-002 Accept and validate JSON control frames: `type: "start"` with `source_language`, `target_language` (reject invalid JSON)
-- [ ] P4-WS-003 Generate `session_id` (uuid4 hex short/long) and create `TranslationSession` via `SessionService`
-- [ ] P4-WS-004 Validate session config: both languages present, supported combination (stub allowlist from config), source != target unless explicitly allowed
-- [ ] P4-WS-005 Emit `session.ready` (and `connected` alias if documented) after session creation succeeds
-- [ ] P4-WS-006 Accept binary audio frames (bytes) and route to session's bounded audio queue (drop/signal backpressure, not crash)
-- [ ] P4-WS-007 Accept JSON `type: "stop"`; trigger session finalization and emit `session.ended`
-- [ ] P4-WS-008 Implement bounded `asyncio.Queue(maxsize=64)` per session with configurable size from `settings.audio_queue_maxsize`
-- [ ] P4-WS-009 Create independent `receive_task`, `processor_task` (stub: consume queue, echo no-op), `send_task` pattern
-- [ ] P4-WS-010 Implement backpressure handling: on queue full, drop oldest or return `error` `RATE_LIMITED` without disconnecting
-- [ ] P4-WS-011 Handle malformed JSON, invalid `type`, missing fields → emit normalized `error` event with `code` & `message`, keep connection open where recoverable
-- [ ] P4-WS-012 Handle `WebSocketDisconnect` and server-side exceptions — guarantee cleanup via `finally` block
-- [ ] P4-WS-013 Enforce payload limits (`max_audio_frame_bytes`, `max_json_bytes`) from config; oversize → `INVALID_AUDIO_DATA`/`INVALID_MESSAGE`
+- [x] P4-WS-001 Create `backend/app/api/websocket.py` router with `GET /ws/v1/translate` handler (thin: validate, delegate to session service, loop)
+- [x] P4-WS-002 Accept and validate JSON control frames: `type: "start"` with `source_language`, `target_language` (reject invalid JSON)
+- [x] P4-WS-003 Generate `session_id` (uuid4 hex short/long) and create `TranslationSession` via `SessionService`
+- [x] P4-WS-004 Validate session config: both languages present, supported combination (stub allowlist from config), source != target unless explicitly allowed
+- [x] P4-WS-005 Emit `session.ready` (and `connected` alias if documented) after session creation succeeds
+- [x] P4-WS-006 Accept binary audio frames (bytes) and route to session's bounded audio queue (drop/signal backpressure, not crash)
+- [x] P4-WS-007 Accept JSON `type: "stop"`; trigger session finalization and emit `session.ended`
+- [x] P4-WS-008 Implement bounded `asyncio.Queue(maxsize=64)` per session with configurable size from `settings.audio_queue_maxsize`
+- [x] P4-WS-009 Create independent `receive_task`, `processor_task` (stub: consume queue, echo no-op), `send_task` pattern
+- [x] P4-WS-010 Implement backpressure handling: on queue full, drop oldest or return `error` `RATE_LIMITED` without disconnecting
+- [x] P4-WS-011 Handle malformed JSON, invalid `type`, missing fields → emit normalized `error` event with `code` & `message`, keep connection open where recoverable
+- [x] P4-WS-012 Handle `WebSocketDisconnect` and server-side exceptions — guarantee cleanup via `finally` block
+- [x] P4-WS-013 Enforce payload limits (`max_audio_frame_bytes`, `max_json_bytes`) from config; oversize → `INVALID_AUDIO_DATA`/`INVALID_MESSAGE`
 
 ### Backend / Session Service
 
-- [ ] P4-BE-001 Create `backend/app/services/session_service.py` (`SessionService` class, not globals) with `create_session`, `get_session`, `end_session`, `cleanup_on_disconnect`
-- [ ] P4-BE-002 Define `backend/app/schemas/websocket.py` Pydantic models for `SessionStart`, `SessionStop`, `ServerEvent` union (session.started/ready, transcript, translation, audio markers, error, session.ended)
-- [ ] P4-BE-003 Define `backend/app/models/session.py` (or `domain/session.py`) `TranslationSession` dataclass with `session_id`, `source_language`, `target_language`, `state`, `audio_queue`, `created_at`, `segment_counter`
-- [ ] P4-BE-004 Integrate `SessionService` with FastAPI dependency injection (singleton `session_service` instance or per-app state `app.state.sessions`)
-- [ ] P4-BE-005 Add session lifecycle state machine: `connecting → ready → listening → processing → ending → ended/failed` (PRD §17)
-- [ ] P4-BE-006 Add structured logging for `session_created`, `websocket_connected`, `session_ended`, `websocket_disconnected` with `session_id`
+- [x] P4-BE-001 Create `backend/app/services/session_service.py` (`SessionService` class, not globals) with `create_session`, `get_session`, `end_session`, `cleanup_on_disconnect`
+- [x] P4-BE-002 Define `backend/app/schemas/websocket.py` Pydantic models for `SessionStart`, `SessionStop`, `ServerEvent` union (session.started/ready, transcript, translation, audio markers, error, session.ended)
+- [x] P4-BE-003 Define `backend/app/models/session.py` (or `domain/session.py`) `TranslationSession` dataclass with `session_id`, `source_language`, `target_language`, `state`, `audio_queue`, `created_at`, `segment_counter`
+- [x] P4-BE-004 Integrate `SessionService` with FastAPI dependency injection (singleton `session_service` instance or per-app state `app.state.sessions`)
+- [x] P4-BE-005 Add session lifecycle state machine: `connecting → ready → listening → processing → ending → ended/failed` (PRD §17)
+- [x] P4-BE-006 Add structured logging for `session_created`, `websocket_connected`, `session_ended`, `websocket_disconnected` with `session_id`
 
 ### Frontend
 
-- [ ] P4-FE-001 Implement `src/services/websocket.js` — real WebSocket client: `connect()`, `sendSessionStart()`, `sendAudio(buffer)`, `sendStop()`, `disconnect()`, `on('event', cb)`, reconnect stub
-- [ ] P4-FE-002 Implement `src/hooks/useWebSocket.js` — state machine `disconnected|connecting|connected|active|ending|error` + `sessionId`; exposes `startSession(langs)`, `stopSession()`, `sendAudio()`
-- [ ] P4-FE-003 Wire `src/hooks/useSessionState.js` to receive server events (`session.ready`, `error`, `session.ended`) from the WS hook
-- [ ] P4-FE-004 Update `src/components/ConnectionStatus.jsx` to reflect live WS status (not just HTTP health)
-- [ ] P4-FE-005 Implement WS error display via `src/components/StatusBanner.jsx` mapping `error.code` → user-friendly messages
+- [x] P4-FE-001 Implement `src/services/websocket.js` — real WebSocket client: `connect()`, `sendSessionStart()`, `sendAudio(buffer)`, `sendStop()`, `disconnect()`, `on('event', cb)`, reconnect stub
+- [x] P4-FE-002 Implement `src/hooks/useWebSocket.js` — state machine `disconnected|connecting|connected|active|ending|error` + `sessionId`; exposes `startSession(langs)`, `stopSession()`, `sendAudio()`
+- [x] P4-FE-003 Wire `src/hooks/useSessionState.js` to receive server events (`session.ready`, `error`, `session.ended`) from the WS hook
+- [x] P4-FE-004 Update `src/components/ConnectionStatus.jsx` to reflect live WS status (not just HTTP health)
+- [x] P4-FE-005 Implement WS error display via `src/components/StatusBanner.jsx` mapping `error.code` → user-friendly messages
 
 ### Testing
 
-- [ ] P4-TEST-001 WebSocket test: client connects and receives `session.ready` after valid `session.start`
-- [ ] P4-TEST-002 WebSocket test: invalid `session.start` (missing language, identical languages) → `error` `INVALID_SESSION_CONFIG`/`UNSUPPORTED_LANGUAGE`
-- [ ] P4-TEST-003 WebSocket test: binary audio frames accepted and queued (no crash)
-- [ ] P4-TEST-004 WebSocket test: `session.stop` → `session.ended`; subsequent audio after stop is rejected
-- [ ] P4-TEST-005 WebSocket test: malformed JSON and oversize frame handling (no server crash, correct `error` codes)
-- [ ] P4-TEST-006 WebSocket test: disconnect triggers cleanup (session removed, tasks cancelled)
+- [x] P4-TEST-001 WebSocket test: client connects and receives `session.ready` after valid `session.start`
+- [x] P4-TEST-002 WebSocket test: invalid `session.start` (missing language, identical languages) → `error` `INVALID_SESSION_CONFIG`/`UNSUPPORTED_LANGUAGE`
+- [x] P4-TEST-003 WebSocket test: binary audio frames accepted and queued (no crash)
+- [x] P4-TEST-004 WebSocket test: `session.stop` → `session.ended`; subsequent audio after stop is rejected
+- [x] P4-TEST-005 WebSocket test: malformed JSON and oversize frame handling (no server crash, correct `error` codes)
+- [x] P4-TEST-006 WebSocket test: disconnect triggers cleanup (session removed, tasks cancelled)
 
 ---
 
@@ -213,14 +213,14 @@ Frontend:
 
 ## 10. Acceptance Criteria
 
-- [ ] WS `GET /ws/v1/translate` accepts connections (upgrade 101).
-- [ ] Valid `session.start` → `session.ready` with `session_id` echo and language validation.
-- [ ] Invalid/malformed messages return normalized `error` events with stable `code` values (no server crash).
-- [ ] Binary audio frames are accepted into per-session bounded queue; queue-full emits `RATE_LIMITED` (or documented drop policy), connection stays open.
-- [ ] `session.stop` → `session.ended` and session is removed from manager.
-- [ ] Unexpected disconnect (client close or server exception) reliably cleans up session and cancels processor task.
-- [ ] Frontend `services/websocket.js` + `hooks/useWebSocket.js` correctly drive `session.start`/`stop` and reflect status in UI.
-- [ ] All new WS tests pass; lint/type checks still green.
+- [x] WS `GET /ws/v1/translate` accepts connections (upgrade 101).
+- [x] Valid `session.start` → `session.ready` with `session_id` echo and language validation.
+- [x] Invalid/malformed messages return normalized `error` events with stable `code` values (no server crash).
+- [x] Binary audio frames are accepted into per-session bounded queue; queue-full emits `RATE_LIMITED` (or documented drop policy), connection stays open.
+- [x] `session.stop` → `session.ended` and session is removed from manager.
+- [x] Unexpected disconnect (client close or server exception) reliably cleans up session and cancels processor task.
+- [x] Frontend `services/websocket.js` + `hooks/useWebSocket.js` correctly drive `session.start`/`stop` and reflect status in UI.
+- [x] All new WS tests pass; lint/type checks still green.
 
 ## 11. Verification Procedure
 
@@ -268,10 +268,10 @@ npm run dev -- --host
 ## 14. Phase Completion Status
 
 - Total tasks: 29
-- Completed tasks: 0
+- Completed tasks: 29
 - Partially completed tasks: 0
-- Remaining tasks: 29
+- Remaining tasks: 0
 - Blocked tasks: 0
-- Overall progress: 0%
-- Acceptance criteria status: 0 / 8 satisfied
+- Overall progress: 100%
+- Acceptance criteria status: 8 / 8 satisfied
 

@@ -65,13 +65,13 @@ class Settings(BaseSettings):
     unified_model: str | None = None
     tts_model: str | None = None
 
-    # --- Audio placeholders (Phase 5) ---
+    # --- Audio / WS (Phase 4-5) ---
     audio_target_sample_rate: int | None = None
     audio_channels: int | None = None
     audio_chunk_ms: int | None = None
-    audio_queue_maxsize: int | None = None
-    max_audio_frame_bytes: int | None = None
-    max_json_bytes: int | None = None
+    audio_queue_maxsize: int = Field(default=64, ge=1, le=1024)
+    max_audio_frame_bytes: int = Field(default=65536, ge=1024, le=1048576)
+    max_json_bytes: int = Field(default=65536, ge=1024, le=1048576)
 
     @property
     def cors_origins(self) -> list[str]:

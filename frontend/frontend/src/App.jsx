@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import AppShell from "./components/AppShell.jsx";
 import { useLanguageSelection } from "./hooks/useLanguageSelection.js";
 import { useSessionState } from "./hooks/useSessionState.js";
+import { useWebSocket } from "./hooks/useWebSocket.js";
 import { fetchCapabilities, fetchHealth } from "./services/api.js";
 import { CONNECTION_STATES } from "./utils/constants.js";
 import "./App.css";
@@ -11,7 +12,6 @@ function App() {
   const [supportedLanguages, setSupportedLanguages] = useState([]);
   const [backendHealthy, setBackendHealthy] = useState(true);
   const [healthError, setHealthError] = useState(null);
-  const [isActive, setIsActive] = useState(false);
 
   const {
     sourceLanguage,
@@ -23,6 +23,22 @@ function App() {
   } = useLanguageSelection(supportedLanguages);
 
   const session = useSessionState();
+  const [wsError, setWsError] = useState(null);
+
+  const ws = useWebSocket({
+    onSessionReady: (event) => {
+      session.setSessionId(event.session_id);
+      session.setConnection(CONNECTION_STATES.LISTENING);
+      setWsError(null);
+    },
+    onSessionEnded: () => {
+      session.setSessionId(null);
+      session.setConnection(CONNECTION_STATES.IDLE);
+    },
+    onErrorEvent: (event) => {
+      setWsError(event.message || event.code);
+    },
+  });
 
   // P3-INT-001: fetch health + capabilities on mount
   useEffect(() => {
@@ -58,14 +74,19 @@ function App() {
 
   const effectiveCanStart = langCanStart && backendHealthy;
 
+  // Derive isActive from WS status for Phase 4
+  const isActiveWs = ws.status === CONNECTION_STATES.LISTENING || ws.status === CONNECTION_STATES.READY || ws.status === CONNECTION_STATES.CONNECTING;
+  const isActive = isActiveWs || false;
+
   const handleStart = () => {
     if (!effectiveCanStart) return;
-    setIsActive(true);
-    session.setConnection(CONNECTION_STATES.LISTENING);
+    setWsError(null);
+    session.setConnection(CONNECTION_STATES.CONNECTING);
+    ws.startSession({ sourceLanguage, targetLanguage });
   };
 
   const handleStop = () => {
-    setIsActive(false);
+    ws.stopSession();
     session.setConnection(CONNECTION_STATES.IDLE);
   };
 
@@ -79,13 +100,18 @@ function App() {
     }
   };
 
-  const bannerMessage = !backendHealthy ? healthError || "Unable to connect to translation service" : null;
+  const bannerMessage = wsError || (!backendHealthy ? healthError || "Unable to connect to translation service" : null);
 
+  const wsStatus = ws.status;
   const connectionStatus = !backendHealthy
     ? CONNECTION_STATES.ERROR
-    : isActive
-      ? CONNECTION_STATES.LISTENING
-      : CONNECTION_STATES.IDLE;
+    : wsStatus === CONNECTION_STATES.ERROR
+      ? CONNECTION_STATES.ERROR
+      : isActive
+        ? CONNECTION_STATES.LISTENING
+        : wsStatus === CONNECTION_STATES.CONNECTING
+          ? CONNECTION_STATES.CONNECTING
+          : CONNECTION_STATES.IDLE;
 
   // Placeholder segments for Phase 3 shell (no WS yet)
   const transcriptSegments = session.segments;
@@ -104,7 +130,7 @@ function App() {
       onTargetChange={setTarget}
       supportedLanguages={supportedLanguages}
       connectionStatus={connectionStatus}
-      connectionError={healthError}
+      connectionError={wsError || healthError}
       bannerMessage={bannerMessage}
       onRetry={handleRetryHealth}
       transcriptSegments={transcriptSegments}

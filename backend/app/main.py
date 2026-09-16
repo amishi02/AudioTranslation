@@ -12,6 +12,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api.capabilities import router as capabilities_router
 from app.api.health import router as health_router
+from app.api.websocket import router as websocket_router
 from app.core.config import settings
 from app.core.logging import configure_logging
 from app.schemas.common import ErrorResponse
@@ -45,6 +46,7 @@ def create_app() -> FastAPI:
     # Health stays unversioned as alias per Risks/Notes
     app.include_router(health_router)
     app.include_router(capabilities_router)
+    app.include_router(websocket_router)
 
     # --- Exception handlers (P2-BE-003) ---
     @app.exception_handler(RequestValidationError)
