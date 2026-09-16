@@ -40,7 +40,7 @@ async def _processor_loop(session: TranslationSession) -> None:
         return
 
 
-@router.websocket("/ws/v1/translate")
+@router.websocket(settings.ws_v1_path)
 async def translate_ws(websocket: WebSocket) -> None:
     """Thin gateway — validates, delegates to SessionService, manages lifecycle."""
     await websocket.accept()

@@ -65,13 +65,27 @@ class Settings(BaseSettings):
     unified_model: str | None = None
     tts_model: str | None = None
 
+    # --- Paths ---
+    ws_v1_path: str = Field(default="/ws/v1/translate")
+    api_v1_prefix: str = Field(default="/api/v1")
+    health_path: str = Field(default="/health")
+    health_ready_path: str = Field(default="/health/ready")
+
+    # --- Device extras (Phase 7-9) ---
+    translation_device: str | None = None
+    unified_device: str | None = None
+    tts_device: str | None = None
+
     # --- Audio / WS (Phase 4-5) ---
-    audio_target_sample_rate: int | None = None
-    audio_channels: int | None = None
-    audio_chunk_ms: int | None = None
+    audio_target_sample_rate: int | None = Field(default=16000)
+    audio_channels: int | None = Field(default=1)
+    audio_chunk_ms: int | None = Field(default=60)
     audio_queue_maxsize: int = Field(default=64, ge=1, le=1024)
     max_audio_frame_bytes: int = Field(default=65536, ge=1024, le=1048576)
     max_json_bytes: int = Field(default=65536, ge=1024, le=1048576)
+
+    # --- Observability ---
+    metrics_enabled: bool = Field(default=False)
 
     @property
     def cors_origins(self) -> list[str]:

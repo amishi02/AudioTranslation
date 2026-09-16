@@ -3,7 +3,12 @@
  * Calls FastAPI GET /health, /health/ready, /api/v1/capabilities
  * and normalizes ErrorResponse envelope.
  */
-import { API_BASE_URL } from "../config/environment.js";
+import {
+  API_BASE_URL,
+  CAPABILITIES_PATH,
+  HEALTH_PATH,
+  HEALTH_READY_PATH,
+} from "../config/environment.js";
 
 async function fetchJson(path) {
   const url = `${API_BASE_URL}${path}`;
@@ -32,13 +37,13 @@ async function fetchJson(path) {
 }
 
 export function fetchHealth() {
-  return fetchJson("/health");
+  return fetchJson(HEALTH_PATH);
 }
 
 export function fetchReady() {
-  return fetchJson("/health/ready");
+  return fetchJson(HEALTH_READY_PATH);
 }
 
 export function fetchCapabilities() {
-  return fetchJson("/api/v1/capabilities");
+  return fetchJson(CAPABILITIES_PATH);
 }
