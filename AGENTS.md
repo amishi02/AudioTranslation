@@ -194,6 +194,24 @@ Before introducing a new package:
 2. Determine whether the dependency is necessary.
 3. Keep the dependency isolated where possible.
 
+## Models & Environment Configuration
+
+- **Use open-source / free models only** for STT, translation, and TTS (e.g., Whisper/faster-whisper, Helsinki-NLP Opus-MT / NLLB, Coqui TTS / Piper — or any self-hosted free model). Do not introduce paid cloud AI APIs (OpenAI, Google, Azure, etc.) unless the phase explicitly requires it and documents the cost.
+
+- **Every dynamic value must be env-configurable.** Model names, provider names, pipeline type, URLs/paths (`VITE_API_BASE_URL`, `VITE_WS_URL`, `WS_V1_PATH`, `API_V1_PREFIX`, `HEALTH_PATH`), language lists, audio settings (`AUDIO_*`), device, and observability flags must be read from environment (backend `backend/.env.example` → `app/core/config.py` via `pydantic-settings`; frontend `frontend/frontend/.env.example` → `import.meta.env` via `src/config/environment.js`). **Do not hard-code** model names, URLs, or paths in business logic.
+
+- **Keep provider abstraction clean and generalized** so swapping a model requires **only an env change**, not code changes in multiple files. Pattern to follow (langchain-like):
+  ```
+  env (.env)  →  config  →  provider factory  →  provider interface/base class  →  concrete provider
+  business logic / pipeline only depends on the interface, never the concrete model
+  ```
+  - Put all model-specific code inside `backend/app/providers/` behind a base interface (e.g., `STTProvider`, `TranslationProvider`, `TTSProvider`, `UnifiedProvider`).
+  - Use a factory (`PipelineFactory` / `ProviderFactory`) that selects the concrete provider from `settings` / env. Changing `STT_MODEL=openai/whisper-small` to `STT_MODEL=distil-whisper` or `TRANSLATION_PROVIDER=opus` to `nllb` must require **no** changes in `services/`, `api/`, or `frontend/` — only `.env`.
+
+- **Do not hard-code model names in multiple files.** If a model name appears in more than one place, refactor it behind config + factory.
+
+- **Structure must remain minimal-change:** adding a new open-source model should be: add a concrete provider under `providers/` implementing the base interface + add its env keys to `.env.example` + register it in the factory. No WebSocket, pipeline, or frontend changes.
+
 ## Development Workflow
 
 Before implementing a feature:
