@@ -4,17 +4,17 @@
 
 | Status | Count |
 |---|---:|
-| Completed | 0 |
+| Completed | 21 |
 | Partially Completed | 0 |
-| Remaining | 22 |
+| Remaining | 0 |
 | Blocked | 0 |
-| Total | 22 |
+| Total | 21 |
 
-Progress: 0%
+Progress: 100%
 
-Status: Not Started
+Status: Completed
 
-Last Updated: 2026-09-14
+Last Updated: 2026-09-16
 
 Related documentation: `AGENTS.md` (frontend responsibilities), `docs/prd.md` §8-18 (product scope, UI states), `docs/srs.md` §7 (UI requirements), `docs/architecture.md` § System, `docs/trd.md` §6.1/§40
 
@@ -49,33 +49,33 @@ Establish the React/Vite frontend foundation and the application shell so users 
 
 ### Frontend
 
-- [ ] P3-FE-001 Create `src/config/environment.js` centralizing `VITE_API_BASE_URL` and `VITE_WS_URL`
-- [ ] P3-FE-002 Create `src/utils/constants.js` (language codes/names, connection states, session states, error codes)
-- [ ] P3-FE-003 Create `src/components/LanguageSelector.jsx` (source + target dropdowns, accessible labels, validation)
-- [ ] P3-FE-004 Create `src/components/ConnectionStatus.jsx` (idle/connecting/listening/processing/error/ready)
-- [ ] P3-FE-005 Create `src/components/Transcript.jsx` (final segments list + active partial with visual distinction)
-- [ ] P3-FE-006 Create `src/components/Translation.jsx` (final segments list + active partial mirror of transcript)
-- [ ] P3-FE-007 Create `src/components/StatusBanner.jsx` (or inline error display) for backend unreachable + unsupported language errors
-- [ ] P3-FE-008 Create `src/components/AppShell.jsx` layout composing header, language selectors, transcript, translation, controls
-- [ ] P3-FE-009 Update `src/App.jsx` to mount `AppShell` and application state container
-- [ ] P3-FE-010 Create `src/hooks/useLanguageSelection.js` (validate pair, derive `canStart`, expose `supportedLanguages` from capabilities)
-- [ ] P3-FE-011 Create `src/hooks/useSessionState.js` (sessionId, sourceLanguage, targetLanguage, segments, connection, error — without WS wiring)
-- [ ] P3-FE-012 Create `src/services/api.js` (fetch helpers for `/health` and `/api/v1/capabilities` with typed responses and error envelope handling)
-- [ ] P3-FE-013 Create stub `src/services/websocket.js` (no real WS yet — exports `createWebSocketClient` returning `{connect, disconnect, status}` stubs)
-- [ ] P3-FE-014 Create stub `src/hooks/useWebSocket.js` (state machine `disconnected/connecting/ready/failed` with no real socket)
-- [ ] P3-FE-015 Apply CSS for layout, focus states, status colors, and contrast per PRD §30 (accessibility)
+- [x] P3-FE-001 Create `src/config/environment.js` centralizing `VITE_API_BASE_URL` and `VITE_WS_URL`
+- [x] P3-FE-002 Create `src/utils/constants.js` (language codes/names, connection states, session states, error codes)
+- [x] P3-FE-003 Create `src/components/LanguageSelector.jsx` (source + target dropdowns, accessible labels, validation)
+- [x] P3-FE-004 Create `src/components/ConnectionStatus.jsx` (idle/connecting/listening/processing/error/ready)
+- [x] P3-FE-005 Create `src/components/Transcript.jsx` (final segments list + active partial with visual distinction)
+- [x] P3-FE-006 Create `src/components/Translation.jsx` (final segments list + active partial mirror of transcript)
+- [x] P3-FE-007 Create `src/components/StatusBanner.jsx` (or inline error display) for backend unreachable + unsupported language errors
+- [x] P3-FE-008 Create `src/components/AppShell.jsx` layout composing header, language selectors, transcript, translation, controls
+- [x] P3-FE-009 Update `src/App.jsx` to mount `AppShell` and application state container
+- [x] P3-FE-010 Create `src/hooks/useLanguageSelection.js` (validate pair, derive `canStart`, expose `supportedLanguages` from capabilities)
+- [x] P3-FE-011 Create `src/hooks/useSessionState.js` (sessionId, sourceLanguage, targetLanguage, segments, connection, error — without WS wiring)
+- [x] P3-FE-012 Create `src/services/api.js` (fetch helpers for `/health` and `/api/v1/capabilities` with typed responses and error envelope handling)
+- [x] P3-FE-013 Create stub `src/services/websocket.js` (no real WS yet — exports `createWebSocketClient` returning `{connect, disconnect, status}` stubs)
+- [x] P3-FE-014 Create stub `src/hooks/useWebSocket.js` (state machine `disconnected/connecting/ready/failed` with no real socket)
+- [x] P3-FE-015 Apply CSS for layout, focus states, status colors, and contrast per PRD §30 (accessibility)
 
 ### Integration
 
-- [ ] P3-INT-001 Wire `useEffect` on mount to call `/health` + `/api/v1/capabilities` and update `ConnectionStatus` + language options
-- [ ] P3-INT-002 Gate Start button: disabled unless `canStart === true` (both languages valid, backend healthy); show inline reason text
+- [x] P3-INT-001 Wire `useEffect` on mount to call `/health` + `/api/v1/capabilities` and update `ConnectionStatus` + language options
+- [x] P3-INT-002 Gate Start button: disabled unless `canStart === true` (both languages valid, backend healthy); show inline reason text
 
 ### Testing
 
-- [ ] P3-TEST-001 Add frontend component tests for `LanguageSelector` (valid/invalid pair, identical languages blocked)
-- [ ] P3-TEST-002 Add frontend tests for `ConnectionStatus` rendering each state
-- [ ] P3-TEST-003 Add frontend test for `Transcript` segment replacement semantics (partial → partial → final)
-- [ ] P3-TEST-004 Verify `npm run build` still passes with new components
+- [x] P3-TEST-001 Add frontend component tests for `LanguageSelector` (valid/invalid pair, identical languages blocked)
+- [x] P3-TEST-002 Add frontend tests for `ConnectionStatus` rendering each state
+- [x] P3-TEST-003 Add frontend test for `Transcript` segment replacement semantics (partial → partial → final)
+- [x] P3-TEST-004 Verify `npm run build` still passes with new components
 
 ---
 
@@ -172,13 +172,13 @@ Frontend:
 
 ## 10. Acceptance Criteria
 
-- [ ] Language selectors render with accessible labels and validation (identical pair blocked).
-- [ ] Transcript and Translation panels render final + partial with distinct visuals; no duplication for same `segment_id`.
-- [ ] Connection status displays all states (idle, connecting, listening, processing, error, disconnected) with appropriate messaging.
-- [ ] `GET /health` result reflected in status banner (healthy vs backend unreachable).
-- [ ] Start button is disabled until languages are valid and backend is healthy, with inline reason.
-- [ ] No TypeScript introduced; all files are JS/JSX per `AGENTS.md`.
-- [ ] Component tests for language/transcript/status pass; `npm run build` passes.
+- [x] Language selectors render with accessible labels and validation (identical pair blocked).
+- [x] Transcript and Translation panels render final + partial with distinct visuals; no duplication for same `segment_id`.
+- [x] Connection status displays all states (idle, connecting, listening, processing, error, disconnected) with appropriate messaging.
+- [x] `GET /health` result reflected in status banner (healthy vs backend unreachable).
+- [x] Start button is disabled until languages are valid and backend is healthy, with inline reason.
+- [x] No TypeScript introduced; all files are JS/JSX per `AGENTS.md`.
+- [x] Component tests for language/transcript/status pass; `npm run build` passes.
 
 ## 11. Verification Procedure
 
@@ -215,11 +215,11 @@ npm run dev -- --host
 
 ## 14. Phase Completion Status
 
-- Total tasks: 22
-- Completed tasks: 0
+- Total tasks: 21
+- Completed tasks: 21
 - Partially completed tasks: 0
-- Remaining tasks: 22
+- Remaining tasks: 0
 - Blocked tasks: 0
-- Overall progress: 0%
-- Acceptance criteria status: 0 / 7 satisfied
+- Overall progress: 100%
+- Acceptance criteria status: 7 / 7 satisfied
 

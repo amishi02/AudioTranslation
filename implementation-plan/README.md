@@ -32,7 +32,7 @@ If docs conflict, the plan prefers — in order — most-specific/latest doc, ex
 |---|---|---|---:|---|
 | Phase 1 | Project & Development Foundation | Repo structure, env config, logging, lint/format, testing harness, dev scripts | Completed | 100% |
 | Phase 2 | Backend Foundation & HTTP API | Modular FastAPI app, config management, health/readiness/capabilities, CORS, error format,薄 API layer | Completed | 100% |
-| Phase 3 | Frontend Foundation & UI Shell | React/Vite foundations, routing/shell, state management, language selector, transcript/translation areas, connection & error UI | Not Started | 0% |
+| Phase 3 | Frontend Foundation & UI Shell | React/Vite foundations, routing/shell, state management, language selector, transcript/translation areas, connection & error UI | Completed | 100% |
 | Phase 4 | WebSocket Foundation & Session Lifecycle | `/ws/v1/translate` gateway, JSON control messages, binary audio framing, session service, bounded queues, backpressure, disconnect cleanup | Not Started | 0% |
 | Phase 5 | Browser Audio Pipeline & Real-time Streaming | getUserMedia, AudioContext/AudioWorklet, PCM S16LE mono 16 kHz, chunking, binary WS streaming, backend audio queue | Not Started | 0% |
 | Phase 6 | Provider Abstraction, Mocks & Event Normalization | Base provider interfaces, mock STT/translation/TTS, common normalized event protocol, pipeline interface | Not Started | 0% |
@@ -44,11 +44,11 @@ If docs conflict, the plan prefers — in order — most-specific/latest doc, ex
 ## Overall Progress
 
 - Total phases: **10**
-- Completed phases: **2**
+- Completed phases: **3**
 - In-progress phases: **0**
-- Not-started phases: **8**
+- Not-started phases: **7**
 - Blocked phases: **0**
-- Overall task progress: **33 / 273 tasks (12%)**
+- Overall task progress: **54 / 273 tasks (20%)**
 
 Progress is computed from the sum of every phase's checklist. Update it whenever a phase's checklist changes.
 

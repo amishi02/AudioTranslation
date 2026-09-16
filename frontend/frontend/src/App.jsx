@@ -1,41 +1,132 @@
+import React from "react"; // eslint-disable-line no-unused-vars
+import { useEffect, useState } from "react";
+import AppShell from "./components/AppShell.jsx";
+import { useLanguageSelection } from "./hooks/useLanguageSelection.js";
+import { useSessionState } from "./hooks/useSessionState.js";
+import { fetchCapabilities, fetchHealth } from "./services/api.js";
+import { CONNECTION_STATES } from "./utils/constants.js";
 import "./App.css";
 
 function App() {
+  const [supportedLanguages, setSupportedLanguages] = useState([]);
+  const [backendHealthy, setBackendHealthy] = useState(true);
+  const [healthError, setHealthError] = useState(null);
+  const [isActive, setIsActive] = useState(false);
+
+  const {
+    sourceLanguage,
+    targetLanguage,
+    setSource,
+    setTarget,
+    validationError,
+    canStart: langCanStart,
+  } = useLanguageSelection(supportedLanguages);
+
+  const session = useSessionState();
+
+  // P3-INT-001: fetch health + capabilities on mount
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        await fetchHealth();
+        if (!cancelled) {
+          setBackendHealthy(true);
+          setHealthError(null);
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setBackendHealthy(false);
+          setHealthError(e.message || "Unable to connect to translation service");
+        }
+      }
+      try {
+        const caps = await fetchCapabilities();
+        if (!cancelled && caps?.supported_languages) {
+          setSupportedLanguages(caps.supported_languages);
+        }
+      } catch {
+        // capabilities failure falls back to LANGUAGES default list (constants)
+        if (!cancelled) setSupportedLanguages([]);
+      }
+    }
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const effectiveCanStart = langCanStart && backendHealthy;
+
+  const handleStart = () => {
+    if (!effectiveCanStart) return;
+    setIsActive(true);
+    session.setConnection(CONNECTION_STATES.LISTENING);
+  };
+
+  const handleStop = () => {
+    setIsActive(false);
+    session.setConnection(CONNECTION_STATES.IDLE);
+  };
+
+  const handleRetryHealth = async () => {
+    try {
+      await fetchHealth();
+      setBackendHealthy(true);
+      setHealthError(null);
+    } catch (e) {
+      setHealthError(e.message);
+    }
+  };
+
+  const bannerMessage = !backendHealthy ? healthError || "Unable to connect to translation service" : null;
+
+  const connectionStatus = !backendHealthy
+    ? CONNECTION_STATES.ERROR
+    : isActive
+      ? CONNECTION_STATES.LISTENING
+      : CONNECTION_STATES.IDLE;
+
+  // Placeholder segments for Phase 3 shell (no WS yet)
+  const transcriptSegments = session.segments;
+  const translationSegments = session.segments.map((s) => ({
+    id: s.id,
+    translatedText: s.text ? `[${s.text}]` : "",
+    sourceText: s.text,
+    status: s.status,
+  }));
+
   return (
-    <div className="app-shell">
-      <header className="app-header">
-        <h1>Real-Time Audio Translation</h1>
-        <p className="app-subtitle">Phase 1 — Foundation shell (no real-time logic yet)</p>
-      </header>
-
-      <main className="app-main">
-        <section aria-labelledby="lang-heading" className="panel">
-          <h2 id="lang-heading">Language Selection</h2>
-          <p className="placeholder">Source and target selectors will appear here (Phase 3).</p>
-        </section>
-
-        <section aria-labelledby="transcript-heading" className="panel">
-          <h2 id="transcript-heading">Source Transcript</h2>
-          <p className="placeholder">Live transcript will appear here (Phases 6–7).</p>
-        </section>
-
-        <section aria-labelledby="translation-heading" className="panel">
-          <h2 id="translation-heading">Translation</h2>
-          <p className="placeholder">Translation will appear here (Phase 8).</p>
-        </section>
-
-        <section aria-labelledby="status-heading" className="panel status-panel">
-          <h2 id="status-heading">Status</h2>
-          <p className="placeholder">Connection status: idle (Phase 3–4)</p>
-        </section>
-      </main>
-
-      <footer className="app-footer">
-        <small>
-          Frontend: React + Vite (JS/JSX) · Backend: FastAPI — see AGENTS.md &amp; docs/
-        </small>
-      </footer>
-    </div>
+    <AppShell
+      sourceLanguage={sourceLanguage}
+      targetLanguage={targetLanguage}
+      onSourceChange={setSource}
+      onTargetChange={setTarget}
+      supportedLanguages={supportedLanguages}
+      connectionStatus={connectionStatus}
+      connectionError={healthError}
+      bannerMessage={bannerMessage}
+      onRetry={handleRetryHealth}
+      transcriptSegments={transcriptSegments}
+      transcriptActive={session.activeSegment}
+      translationSegments={translationSegments}
+      translationActive={
+        session.activeSegment
+          ? {
+              id: session.activeSegment.id,
+              translatedText: `[${session.activeSegment.text}]`,
+              sourceText: session.activeSegment.text,
+              status: session.activeSegment.status,
+            }
+          : null
+      }
+      canStart={effectiveCanStart}
+      validationError={validationError}
+      backendHealthy={backendHealthy}
+      onStart={handleStart}
+      onStop={handleStop}
+      isActive={isActive}
+    />
   );
 }
 

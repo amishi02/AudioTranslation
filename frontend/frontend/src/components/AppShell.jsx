@@ -1,0 +1,103 @@
+import React from "react"; // eslint-disable-line no-unused-vars
+import LanguageSelector from "./LanguageSelector.jsx";
+import ConnectionStatus from "./ConnectionStatus.jsx";
+import Transcript from "./Transcript.jsx";
+import Translation from "./Translation.jsx";
+import StatusBanner from "./StatusBanner.jsx";
+
+/**
+ * Layout per PRD §8 — no business logic, props only.
+ */
+export default function AppShell({
+  sourceLanguage,
+  targetLanguage,
+  onSourceChange,
+  onTargetChange,
+  supportedLanguages = [],
+  connectionStatus = "idle",
+  connectionError = null,
+  bannerMessage = null,
+  onRetry,
+  // transcript / translation
+  transcriptSegments = [],
+  transcriptActive = null,
+  translationSegments = [],
+  translationActive = null,
+  // controls
+  canStart = false,
+  validationError = null,
+  backendHealthy = true,
+  onStart,
+  onStop,
+  isActive = false,
+}) {
+  const startDisabled = !canStart || !backendHealthy;
+  let startReason = "";
+  if (!backendHealthy) startReason = "Backend unreachable";
+  else if (validationError) startReason = validationError;
+  else if (!sourceLanguage || !targetLanguage) startReason = "Select source and target";
+
+  return (
+    <div className="app-shell" data-testid="app-shell">
+      <header className="app-header">
+        <h1>Real-Time Audio Translation</h1>
+        <p className="app-subtitle">Speak and see live transcript + translation</p>
+      </header>
+
+      {bannerMessage && <StatusBanner message={bannerMessage} onRetry={onRetry} />}
+
+      <section className="controls-section">
+        <LanguageSelector
+          sourceLanguage={sourceLanguage}
+          targetLanguage={targetLanguage}
+          onSourceChange={onSourceChange}
+          onTargetChange={onTargetChange}
+          supportedLanguages={supportedLanguages}
+        />
+        <ConnectionStatus status={connectionStatus} error={connectionError} />
+        <div className="controls-row">
+          {!isActive ? (
+            <button
+              type="button"
+              data-testid="start-button"
+              disabled={startDisabled}
+              onClick={onStart}
+              className="btn btn-primary"
+            >
+              Start Translation
+            </button>
+          ) : (
+            <button
+              type="button"
+              data-testid="stop-button"
+              onClick={onStop}
+              className="btn btn-danger"
+            >
+              Stop Translation
+            </button>
+          )}
+        </div>
+        {startReason && !isActive && (
+          <p className="start-reason" data-testid="start-reason">
+            {startReason}
+          </p>
+        )}
+      </section>
+
+      <section className="panels" aria-label="Translation panels">
+        <div className="panel" aria-labelledby="transcript-heading">
+          <h2 id="transcript-heading">Source Transcript</h2>
+          <Transcript segments={transcriptSegments} activeSegment={transcriptActive} />
+        </div>
+        <div className="panel" aria-labelledby="translation-heading">
+          <h2 id="translation-heading">Translation</h2>
+          <Translation segments={translationSegments} activeSegment={translationActive} />
+        </div>
+      </section>
+
+      <footer className="app-footer">
+        <small>Frontend: React + Vite · Backend: FastAPI — see AGENTS.md</small>
+      </footer>
+    </div>
+  );
+}
