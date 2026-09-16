@@ -4,15 +4,15 @@
 
 | Status | Count |
 |---|---:|
-| Completed | 13 |
+| Completed | 17 |
 | Partially Completed | 0 |
-| Remaining | 5 |
+| Remaining | 0 |
 | Blocked | 0 |
-| Total | 18 |
+| Total | 17 |
 
-Progress: 72%
+Progress: 100%
 
-Status: In Progress
+Status: Completed
 
 Last Updated: 2026-09-16
 
@@ -72,13 +72,13 @@ Establish the repository, development environment, and engineering conventions s
 
 ### Testing
 
-- [ ] P1-TEST-001 Add backend smoke test: `tests/test_health.py` importing FastAPI app and checking importability
-- [ ] P1-TEST-002 Add frontend build verification (npm build exits 0) documented as verification step
+- [x] P1-TEST-001 Add backend smoke test: `tests/test_health.py` importing FastAPI app and checking importability
+- [x] P1-TEST-002 Add frontend build verification (npm build exits 0) documented as verification step
 
 ### Documentation
 
-- [ ] P1-DOC-001 Update root `README.md` with prerequisites, setup, and development commands (or confirm dedicated doc)
-- [ ] P1-DOC-002 Add `docs/development.md` content: commands, lint/format, testing, env, architecture references
+- [x] P1-DOC-001 Update root `README.md` with prerequisites, setup, and development commands (or confirm dedicated doc)
+- [x] P1-DOC-002 Add `docs/development.md` content: commands, lint/format, testing, env, architecture references
 
 ---
 
@@ -209,15 +209,15 @@ Repo:
 
 ## 10. Acceptance Criteria
 
-- [ ] Repo structure matches documented layout; frontend and backend remain independent.
-- [ ] `backend/.env.example` exists and is committed; local `.env` is gitignored.
-- [ ] `backend/app/core/config.py` loads via `pydantic-settings` in dev and test without errors.
-- [ ] Structured logging is configured and emits formatted logs (no audio payloads).
-- [ ] `ruff check` + `ruff format --check` + `mypy` pass on backend.
-- [ ] `pytest` runs (≥1 test passing or collecting) with `pytest-asyncio`.
-- [ ] Frontend has Vite env handling, folder skeleton, and minimal shell replacing demo.
-- [ ] `npm run lint` and `npm run build` pass on frontend.
-- [ ] Root `README.md` + `docs/development.md` describe setup and dev workflow accurately.
+- [x] Repo structure matches documented layout; frontend and backend remain independent.
+- [x] `backend/.env.example` exists and is committed; local `.env` is gitignored.
+- [x] `backend/app/core/config.py` loads via `pydantic-settings` in dev and test without errors.
+- [x] Structured logging is configured and emits formatted logs (no audio payloads).
+- [x] `ruff check` + `ruff format --check` + `mypy` pass on backend.
+- [x] `pytest` runs (≥1 test passing or collecting) with `pytest-asyncio`.
+- [x] Frontend has Vite env handling, folder skeleton, and minimal shell replacing demo.
+- [x] `npm run lint` and `npm run build` pass on frontend.
+- [x] Root `README.md` + `docs/development.md` describe setup and dev workflow accurately.
 
 ## 11. Verification Procedure
 
@@ -258,11 +258,11 @@ Expected: `pytest` passes, `ruff`/`mypy` pass, frontend builds and dev server sh
 
 ## 14. Phase Completion Status
 
-- Total tasks: 18
-- Completed tasks: 0
+- Total tasks: 17
+- Completed tasks: 17
 - Partially completed tasks: 0
-- Remaining tasks: 18
+- Remaining tasks: 0
 - Blocked tasks: 0
-- Overall progress: 0%
-- Acceptance criteria status: 0 / 9 satisfied
+- Overall progress: 100%
+- Acceptance criteria status: 9 / 9 satisfied
 
