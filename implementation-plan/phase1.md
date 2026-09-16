@@ -4,17 +4,17 @@
 
 | Status | Count |
 |---|---:|
-| Completed | 4 |
+| Completed | 9 |
 | Partially Completed | 0 |
-| Remaining | 14 |
+| Remaining | 9 |
 | Blocked | 0 |
 | Total | 18 |
 
-Progress: 22%
+Progress: 50%
 
 Status: In Progress
 
-Last Updated: 2026-09-15
+Last Updated: 2026-09-16
 
 Related documentation: `AGENTS.md`, `docs/architecture.md`, `docs/trd.md` §39-40, `docs/development.md`, `docs/srs.md` §7 (NFR-007), `docs/prd.md` §7
 
@@ -57,11 +57,11 @@ Establish the repository, development environment, and engineering conventions s
 
 ### Backend
 
-- [ ] P1-BE-001 Implement `backend/app/core/config.py` using `pydantic-settings` (app name, env, log level, CORS origins, host/port)
-- [ ] P1-BE-002 Implement `backend/app/core/logging.py` structured logging (level, format, request/session fields, no audio payloads)
-- [ ] P1-BE-003 Enforce backend directory contract: `app/{api,services,providers,models,schemas,core,utils}` with `__init__.py` and README comment
-- [ ] P1-BE-004 Configure `ruff` and `mypy` for backend (per `AGENTS.md` quality rules)
-- [ ] P1-BE-005 Configure `pytest` + `pytest-asyncio` with `backend/pytest.ini` or `pyproject.toml` section and verify `python -m pytest` runs
+- [x] P1-BE-001 Implement `backend/app/core/config.py` using `pydantic-settings` (app name, env, log level, CORS origins, host/port)
+- [x] P1-BE-002 Implement `backend/app/core/logging.py` structured logging (level, format, request/session fields, no audio payloads)
+- [x] P1-BE-003 Enforce backend directory contract: `app/{api,services,providers,models,schemas,core,utils}` with `__init__.py` and README comment
+- [x] P1-BE-004 Configure `ruff` and `mypy` for backend (per `AGENTS.md` quality rules)
+- [x] P1-BE-005 Configure `pytest` + `pytest-asyncio` with `backend/pytest.ini` or `pyproject.toml` section and verify `python -m pytest` runs
 
 ### Frontend
 

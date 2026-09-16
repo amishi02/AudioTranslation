@@ -1,9 +1,13 @@
 from fastapi import FastAPI
 
 from app.api.health import router as health_router
+from app.core.config import settings
+from app.core.logging import configure_logging
+
+configure_logging(settings.log_level)
 
 app = FastAPI(
-    title="Real-Time Audio Translation API",
+    title=settings.app_name,
     version="0.1.0",
 )
 
