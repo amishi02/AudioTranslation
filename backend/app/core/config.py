@@ -27,8 +27,9 @@ class Settings(BaseSettings):
         case_sensitive=False,
     )
 
-    # --- Core (Phase 1) ---
+    # --- Core (Phase 1-2) ---
     app_name: str = Field(default="Real-Time Audio Translation API")
+    app_version: str = Field(default="0.1.0")
     app_env: Literal["development", "production", "test"] = Field(default="development")
     log_level: str = Field(default="INFO")
     host: str = Field(default="0.0.0.0")
@@ -40,6 +41,13 @@ class Settings(BaseSettings):
         default="http://localhost:5173,http://127.0.0.1:5173",
         alias="CORS_ORIGINS",
         validation_alias="CORS_ORIGINS",
+    )
+
+    # Supported languages — comma-separated (Phase 2 stub)
+    supported_languages_raw: str = Field(
+        default="en,hi,es,fr,de",
+        alias="SUPPORTED_LANGUAGES",
+        validation_alias="SUPPORTED_LANGUAGES",
     )
 
     # --- Phase-2+ placeholders (kept Optional to avoid hard failure) ---
@@ -69,6 +77,15 @@ class Settings(BaseSettings):
     def cors_origins(self) -> list[str]:
         """Parsed ``CORS_ORIGINS`` as list."""
         return [o.strip() for o in self.cors_origins_raw.split(",") if o.strip()]
+
+    @property
+    def supported_languages(self) -> list[str]:
+        """Parsed ``SUPPORTED_LANGUAGES`` as list."""
+        return [
+            s.strip().lower()
+            for s in self.supported_languages_raw.split(",")
+            if s.strip()
+        ]
 
 
 settings = Settings()

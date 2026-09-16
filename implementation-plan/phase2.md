@@ -4,17 +4,17 @@
 
 | Status | Count |
 |---|---:|
-| Completed | 0 |
+| Completed | 16 |
 | Partially Completed | 0 |
-| Remaining | 18 |
+| Remaining | 0 |
 | Blocked | 0 |
-| Total | 18 |
+| Total | 16 |
 
-Progress: 0%
+Progress: 100%
 
-Status: Not Started
+Status: Completed
 
-Last Updated: 2026-09-14
+Last Updated: 2026-09-16
 
 Related documentation: `AGENTS.md` (backend layers), `docs/architecture.md`, `docs/trd.md` §39-46, `docs/srs.md` §17-19 (API requirements, health check), `docs/prd.md` §18 (UI states)
 
@@ -49,31 +49,31 @@ Establish the modular FastAPI backend foundation and the basic HTTP surface area
 
 ### Backend
 
-- [ ] P2-BE-001 Create application factory `backend/app/main.py:create_app()` wiring config, logging, CORS, routers
-- [ ] P2-BE-002 Implement `backend/app/schemas/common.py` error envelope `ErrorResponse` + success wrappers
-- [ ] P2-BE-003 Add global exception handlers (HTTPException, validation, unhandled) returning `ErrorResponse`
-- [ ] P2-BE-004 Implement `GET /health` in `backend/app/api/health.py` (liveness: always ok when process running)
-- [ ] P2-BE-005 Implement `GET /health/ready` (readiness: config loaded, no model gate yet — stub `model_ready=True` for Phase 2)
-- [ ] P2-BE-006 Implement `GET /api/v1/capabilities` (supported languages, pipeline stub, version)
-- [ ] P2-BE-007 Configure CORS (`CORSMiddleware`) from `settings.cors_origins` with safe defaults
-- [ ] P2-BE-008 Define backend API versioning convention (`/api/v1` prefix router) and mount health under it or alias
-- [ ] P2-BE-009 Add Pydantic schemas for `HealthResponse`, `ReadyResponse`, `CapabilitiesResponse` in `schemas/`
+- [x] P2-BE-001 Create application factory `backend/app/main.py:create_app()` wiring config, logging, CORS, routers
+- [x] P2-BE-002 Implement `backend/app/schemas/common.py` error envelope `ErrorResponse` + success wrappers
+- [x] P2-BE-003 Add global exception handlers (HTTPException, validation, unhandled) returning `ErrorResponse`
+- [x] P2-BE-004 Implement `GET /health` in `backend/app/api/health.py` (liveness: always ok when process running)
+- [x] P2-BE-005 Implement `GET /health/ready` (readiness: config loaded, no model gate yet — stub `model_ready=True` for Phase 2)
+- [x] P2-BE-006 Implement `GET /api/v1/capabilities` (supported languages, pipeline stub, version)
+- [x] P2-BE-007 Configure CORS (`CORSMiddleware`) from `settings.cors_origins` with safe defaults
+- [x] P2-BE-008 Define backend API versioning convention (`/api/v1` prefix router) and mount health under it or alias
+- [x] P2-BE-009 Add Pydantic schemas for `HealthResponse`, `ReadyResponse`, `CapabilitiesResponse` in `schemas/`
 
 ### Integration
 
-- [ ] P2-INT-001 Verify `curl http://localhost:8000/health` and `GET /health/ready` return expected JSON
-- [ ] P2-INT-002 Verify CORS preflight from `http://localhost:5173` succeeds
+- [x] P2-INT-001 Verify `curl http://localhost:8000/health` and `GET /health/ready` return expected JSON
+- [x] P2-INT-002 Verify CORS preflight from `http://localhost:5173` succeeds
 
 ### Testing
 
-- [ ] P2-TEST-001 Add `tests/test_api_health.py`: `/health` returns 200 `{status: "ok"}`
-- [ ] P2-TEST-002 Add `tests/test_api_ready.py`: `/health/ready` returns model readiness fields
-- [ ] P2-TEST-003 Add `tests/test_api_capabilities.py`: `/api/v1/capabilities` returns languages & pipeline type
-- [ ] P2-TEST-004 Add error-format test: unknown route returns `ErrorResponse` envelope with `code` & `message`
+- [x] P2-TEST-001 Add `tests/test_api_health.py`: `/health` returns 200 `{status: "ok"}`
+- [x] P2-TEST-002 Add `tests/test_api_ready.py`: `/health/ready` returns model readiness fields
+- [x] P2-TEST-003 Add `tests/test_api_capabilities.py`: `/api/v1/capabilities` returns languages & pipeline type
+- [x] P2-TEST-004 Add error-format test: unknown route returns `ErrorResponse` envelope with `code` & `message`
 
 ### Documentation
 
-- [ ] P2-DOC-001 Document HTTP error codes & envelope in `docs/development.md` or `implementation-plan/phase2.md` appendix
+- [x] P2-DOC-001 Document HTTP error codes & envelope in `docs/development.md` or `implementation-plan/phase2.md` appendix
 
 ---
 
@@ -164,13 +164,13 @@ Backend:
 
 ## 10. Acceptance Criteria
 
-- [ ] `GET /health` returns `{status: "ok"}` with 200.
-- [ ] `GET /health/ready` returns readiness payload with `status` and `model_ready`.
-- [ ] `GET /api/v1/capabilities` returns supported languages and pipeline types.
-- [ ] All HTTP errors return standardized `ErrorResponse` JSON (no stack traces).
-- [ ] CORS allows `http://localhost:5173` (configurable via env).
-- [ ] Backend tests for health/ready/capabilities/error-format all pass.
-- [ ] `ruff`/`mypy`/`pytest` still green.
+- [x] `GET /health` returns `{status: "ok"}` with 200.
+- [x] `GET /health/ready` returns readiness payload with `status` and `model_ready`.
+- [x] `GET /api/v1/capabilities` returns supported languages and pipeline types.
+- [x] All HTTP errors return standardized `ErrorResponse` JSON (no stack traces).
+- [x] CORS allows `http://localhost:5173` (configurable via env).
+- [x] Backend tests for health/ready/capabilities/error-format all pass.
+- [x] `ruff`/`mypy`/`pytest` still green.
 
 ## 11. Verification Procedure
 
@@ -203,11 +203,11 @@ Expected: three successful JSON payloads, error envelope for unknown route, docs
 
 ## 14. Phase Completion Status
 
-- Total tasks: 18
-- Completed tasks: 0
+- Total tasks: 16
+- Completed tasks: 16
 - Partially completed tasks: 0
-- Remaining tasks: 18
+- Remaining tasks: 0
 - Blocked tasks: 0
-- Overall progress: 0%
-- Acceptance criteria status: 0 / 7 satisfied
+- Overall progress: 100%
+- Acceptance criteria status: 7 / 7 satisfied
 

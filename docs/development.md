@@ -103,6 +103,40 @@ Per `AGENTS.md`:
 - `docs/srs.md` / `docs/prd.md` — requirements, partial/final semantics.
 - `implementation-plan/` — authoritative phased tasks and progress tracker.
 
+## HTTP API (Phase 2)
+
+- `GET /health` → `{"status":"ok","version":"0.1.0"}` — liveness.
+- `GET /health/ready` → `{"status":"ready","model_ready":true,"pipeline":"not_configured|cascaded","version":"0.1.0"}` — readiness stub (`model_ready` true until real model gating in Phase 7+).
+- `GET /api/v1/capabilities` → `{"supported_languages":["en","hi","es","fr","de"],"pipeline_types":["cascaded","unified"],"default_pipeline":"cascaded","version":"0.1.0"}` — sourced from `app/core/config.py` (`SUPPORTED_LANGUAGES`).
+- Versioning: `/api/v1` prefix for capabilities; `/health` aliases stay unversioned per `phase2.md` Risks.
+- Docs: `/docs` (Swagger) and `/openapi.json` reflect typed `response_model` schemas.
+
+CORS is configured via `CORS_ORIGINS` (default `http://localhost:5173,http://127.0.0.1:5173`) through `CORSMiddleware` in `app/main.py:create_app()`.
+
+## Error Envelope
+
+All HTTP errors return standardized `ErrorResponse` (never HTML or stack traces):
+
+```json
+{
+  "error": "http_error",
+  "code": "NOT_FOUND",
+  "message": "Not Found",
+  "details": null
+}
+```
+
+Codes in use (Phase 2):
+
+| Code | HTTP | When |
+|---|---|---|
+| `INVALID_MESSAGE` | 422 | `RequestValidationError` |
+| `NOT_FOUND` | 404 | unknown route |
+| `HTTP_4xx/5xx` | 4xx/5xx | other `StarletteHTTPException` |
+| `INTERNAL_ERROR` | 500 | unhandled `Exception` |
+
+Handlers live in `app/main.py:create_app()` (see `app/schemas/common.py`). Validation handlers log at `WARNING`, 5xx at `ERROR`, never log raw audio or PII.
+
 ## Git
 
 - Small logical commits, never discard user changes, never `git reset --hard` unless instructed.

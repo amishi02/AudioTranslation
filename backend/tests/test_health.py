@@ -23,7 +23,9 @@ def test_health_endpoint_registered() -> None:
     client = TestClient(app)
     resp = client.get("/health")
     assert resp.status_code == 200
-    assert resp.json() == {"status": "ok"}
+    data = resp.json()
+    assert data["status"] == "ok"
+    assert "version" in data
 
 
 def test_config_loads() -> None:
