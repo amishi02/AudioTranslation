@@ -4,13 +4,13 @@
 
 | Status | Count |
 |---|---:|
-| Completed | 9 |
+| Completed | 13 |
 | Partially Completed | 0 |
-| Remaining | 9 |
+| Remaining | 5 |
 | Blocked | 0 |
 | Total | 18 |
 
-Progress: 50%
+Progress: 72%
 
 Status: In Progress
 
@@ -65,10 +65,10 @@ Establish the repository, development environment, and engineering conventions s
 
 ### Frontend
 
-- [ ] P1-FE-001 Verify Vite config proxies API base or exposes `VITE_API_BASE_URL` / `VITE_WS_URL` via env
-- [ ] P1-FE-002 Replace default Vite demo content with minimal app shell (`App.jsx`, `main.jsx`) with placeholder header/status
-- [ ] P1-FE-003 Create frontend folder skeleton: `src/{components,hooks,services,config,utils}` (with placeholder `README.md` or index)
-- [ ] P1-FE-004 Configure ESLint + formatting for JS/JSX and confirm `npm run lint` + `npm run build` pass
+- [x] P1-FE-001 Verify Vite config proxies API base or exposes `VITE_API_BASE_URL` / `VITE_WS_URL` via env
+- [x] P1-FE-002 Replace default Vite demo content with minimal app shell (`App.jsx`, `main.jsx`) with placeholder header/status
+- [x] P1-FE-003 Create frontend folder skeleton: `src/{components,hooks,services,config,utils}` (with placeholder `README.md` or index)
+- [x] P1-FE-004 Configure ESLint + formatting for JS/JSX and confirm `npm run lint` + `npm run build` pass
 
 ### Testing
 
