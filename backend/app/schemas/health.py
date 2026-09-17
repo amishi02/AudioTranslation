@@ -11,9 +11,12 @@ class HealthResponse(BaseModel):
 
 
 class ReadyResponse(BaseModel):
-    """Readiness response — Phase 2 stub (model_ready always true)."""
+    """Readiness response — Phase 7 includes STT readiness."""
 
     status: str = "ready"
     model_ready: bool
     pipeline: str
     version: str
+    stt_ready: bool | None = None
+    stt_model: str | None = None
+    stt_provider: str | None = None

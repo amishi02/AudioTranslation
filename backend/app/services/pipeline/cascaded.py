@@ -17,7 +17,10 @@ class CascadedPipeline(TranslationPipeline):
         self._langs: dict[str, tuple[str, str]] = {}
 
     async def start_session(self, session: TranslationSession) -> None:
-        self._langs[session.session_id] = (session.source_language, session.target_language)
+        self._langs[session.session_id] = (
+            session.source_language,
+            session.target_language,
+        )
         await self._stt.start_session(session.session_id, session.source_language)
 
     async def push_audio(self, session_id: str, pcm: bytes) -> None:

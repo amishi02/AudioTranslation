@@ -20,13 +20,21 @@ class MockUnifiedProvider(UnifiedSpeechTranslationProvider):
         self._ready = False
         self._states.clear()
 
-    async def start_session(self, session_id: str, source_language: str, target_language: str) -> None:
+    async def start_session(
+        self, session_id: str, source_language: str, target_language: str
+    ) -> None:
         self._states[session_id] = {
             "count": 0,
             "segment_id": 1,
             "src": source_language,
             "tgt": target_language,
-            "texts": ["Hello", "Hello my", "Hello my name", "Hello my name is", "Hello my name is John"],
+            "texts": [
+                "Hello",
+                "Hello my",
+                "Hello my name",
+                "Hello my name is",
+                "Hello my name is John",
+            ],
         }
 
     async def push_audio(self, session_id: str, pcm: bytes) -> None:

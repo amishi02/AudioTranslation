@@ -28,7 +28,13 @@ class MockSTTProvider(STTProvider):
             "count": 0,
             "segment_id": 1,
             "source_language": source_language,
-            "texts": ["Hello", "Hello my", "Hello my name", "Hello my name is", "Hello my name is John"],
+            "texts": [
+                "Hello",
+                "Hello my",
+                "Hello my name",
+                "Hello my name is",
+                "Hello my name is John",
+            ],
         }
 
     async def push_audio(self, session_id: str, pcm: bytes) -> None:

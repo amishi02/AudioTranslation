@@ -1,6 +1,10 @@
 """P6-TEST-001: EventNormalizer."""
 
-from app.services.event_normalizer import normalize_transcript, normalize_translation, normalize_unified
+from app.services.event_normalizer import (
+    normalize_transcript,
+    normalize_translation,
+    normalize_unified,
+)
 
 
 def test_normalize_transcript_partial():
@@ -20,7 +24,12 @@ def test_normalize_transcript_final():
 
 
 def test_normalize_translation():
-    raw = {"segment_id": 1, "source_text": "Hello", "translated_text": "[hi] Hello", "is_final": False}
+    raw = {
+        "segment_id": 1,
+        "source_text": "Hello",
+        "translated_text": "[hi] Hello",
+        "is_final": False,
+    }
     ev = normalize_translation(raw, "s1")
     assert ev.type == "translation"
     assert ev.source_text == "Hello"
@@ -29,7 +38,12 @@ def test_normalize_translation():
 
 
 def test_normalize_unified():
-    raw = {"segment_id": 1, "source_text": "Hello", "translated_text": "[hi] Hello", "is_final": True}
+    raw = {
+        "segment_id": 1,
+        "source_text": "Hello",
+        "translated_text": "[hi] Hello",
+        "is_final": True,
+    }
     tr, tl = normalize_unified(raw, "s1")
     assert tr.type == "transcript"
     assert tl.type == "translation"

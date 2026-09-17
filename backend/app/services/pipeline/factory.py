@@ -15,11 +15,16 @@ def create_pipeline(pipeline_type: str | None = None) -> TranslationPipeline:
     """Select pipeline based on settings.pipeline_type or explicit arg."""
     pt = (pipeline_type or settings.pipeline_type or "cascaded").lower()
     if pt == "cascaded":
-        # For Phase 6, mock providers only; real providers wired in Phase 7-9 via env
-        stt = MockSTTProvider()
+        stt_provider_name = (settings.stt_provider or "whisper").lower()
+        if stt_provider_name in ("whisper", "faster_whisper", "faster-whisper"):
+            from app.providers.stt.whisper import WhisperSTTProvider
+
+            stt = WhisperSTTProvider()
+        elif stt_provider_name == "mock":
+            stt = MockSTTProvider()
+        else:
+            raise ValueError(f"UNSUPPORTED_STT_PROVIDER: {stt_provider_name}")
         trans = MockTranslationProvider()
-        # Initialize synchronously for mock (no await needed for is_ready, but we set ready)
-        # For Phase 6 tests, caller will await initialize
         return CascadedPipeline(stt, trans)
     if pt == "unified":
         unified = MockUnifiedProvider()
@@ -27,7 +32,9 @@ def create_pipeline(pipeline_type: str | None = None) -> TranslationPipeline:
     raise ValueError(f"UNSUPPORTED_PIPELINE: {pt} not supported")
 
 
-async def create_and_init_pipeline(pipeline_type: str | None = None) -> TranslationPipeline:
+async def create_and_init_pipeline(
+    pipeline_type: str | None = None,
+) -> TranslationPipeline:
     """Helper to create and initialize mock providers."""
     pipeline = create_pipeline(pipeline_type)
     # Initialize underlying providers

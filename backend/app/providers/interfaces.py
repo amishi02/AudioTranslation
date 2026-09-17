@@ -39,7 +39,9 @@ class TranslationProvider(BaseProvider):
         """Translate text; may be called for partial hypotheses."""
 
     # Optional batched variant for future
-    async def translate_batch(self, texts: list[str], source_lang: str, target_lang: str) -> list[str]:
+    async def translate_batch(
+        self, texts: list[str], source_lang: str, target_lang: str
+    ) -> list[str]:
         return [await self.translate(t, source_lang, target_lang) for t in texts]
 
 
@@ -55,7 +57,9 @@ class UnifiedSpeechTranslationProvider(BaseProvider):
     """Direct speech translation — audio in, transcript+translation out."""
 
     @abstractmethod
-    async def start_session(self, session_id: str, source_language: str, target_language: str) -> None:
+    async def start_session(
+        self, session_id: str, source_language: str, target_language: str
+    ) -> None:
         pass
 
     @abstractmethod

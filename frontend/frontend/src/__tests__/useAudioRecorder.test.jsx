@@ -11,6 +11,7 @@ class MockAudioWorkletNode {
   // eslint-disable-next-line no-unused-vars
   constructor(ctx, _name) {
     this.port = { postMessage: () => {}, onmessage: null, close: vi.fn() };
+    this.connect = vi.fn();
     this.disconnect = vi.fn();
     this.context = ctx;
   }
@@ -55,8 +56,10 @@ describe("useAudioRecorder", () => {
       return {
         sampleRate: 16000,
         state: "running",
+        destination: {},
         audioWorklet: { addModule: vi.fn(async () => {}) },
         createMediaStreamSource: vi.fn(() => ({ connect: vi.fn(), disconnect: vi.fn() })),
+        createGain: vi.fn(() => ({ gain: { value: 1 }, connect: vi.fn(), disconnect: vi.fn() })),
         close: vi.fn(async () => {}),
       };
     });

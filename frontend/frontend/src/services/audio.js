@@ -93,8 +93,6 @@ export async function attachWorklet(audioContext) {
     // Fallback error for unsupported browsers
     throw new Error(`AudioWorklet not supported: ${e.message}`, { cause: e });
   }
-  const node = new AudioWorkletNode(audioContext, "audio-processor");
-  return node;
 }
 
 /**

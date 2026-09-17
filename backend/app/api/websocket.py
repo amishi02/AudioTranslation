@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import time
 import uuid
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
@@ -39,8 +40,20 @@ async def _processor_loop(session: TranslationSession, websocket: WebSocket) -> 
             if pipeline is None:
                 continue
             try:
-                await pipeline.push_audio(session.session_id, pcm)  # type: ignore[union-attr]
-                events = await pipeline.poll_events(session.session_id)  # type: ignore[union-attr]
+                # Whisper inference is much slower than 60 ms audio chunks on
+                # CPU. Drain queued chunks before polling so one inference
+                # processes the accumulated audio instead of falling behind.
+                queued = [pcm]
+                while True:
+                    try:
+                        queued.append(session.audio_queue.get_nowait())
+                    except asyncio.QueueEmpty:
+                        break
+                for queued_pcm in queued:
+                    await pipeline.push_audio(  # type: ignore[attr-defined]
+                        session.session_id, queued_pcm
+                    )
+                events = await pipeline.poll_events(session.session_id)  # type: ignore[attr-defined]
                 for ev in events:
                     try:
                         await websocket.send_json(ev)
@@ -52,7 +65,9 @@ async def _processor_loop(session: TranslationSession, websocket: WebSocket) -> 
                 code = getattr(exc, "code", "MODEL_ERROR")
                 msg = str(exc)
                 try:
-                    await websocket.send_json({"type": "error", "code": code, "message": msg})
+                    await websocket.send_json(
+                        {"type": "error", "code": code, "message": msg}
+                    )
                 except Exception:
                     return
     except asyncio.CancelledError:
@@ -229,14 +244,22 @@ async def translate_ws(websocket: WebSocket) -> None:
                     await _send_error(websocket, "SESSION_ERROR", "Session not found")
                     continue
                 # Enqueue with backpressure + queue depth (P4-WS-010, P5-BE-003)
+                # Log every chunk (INFO) for user visibility: 60ms/960 samples/1920 bytes S16LE mono 16k
+                logger.debug(
+                    "ws audio chunk session_id=%s bytes=%s qsize_before=%s total_frames=%s (chunk=%s ms, %s samples, %s bytes)",
+                    current_session_id[:8] if current_session_id else "unknown",
+                    len(frame),
+                    session_opt.audio_queue.qsize(),
+                    session_opt.frames_received + 1,
+                    60,
+                    960,
+                    1920,
+                )
                 try:
                     session_opt.audio_queue.put_nowait(frame)
                     session_opt.frames_received += 1
                     session_opt.bytes_received += len(frame)
-                    import time as _t
-
-                    session_opt.last_frame_at = _t.time()
-                    # DEBUG every 20 frames for observability without spamming
+                    session_opt.last_frame_at = time.time()
                     if session_opt.frames_received % 20 == 0:
                         logger.debug(
                             "audio_queue qsize=%s frames=%s bytes=%s session_id=%s",
@@ -246,16 +269,26 @@ async def translate_ws(websocket: WebSocket) -> None:
                             current_session_id,
                         )
                 except asyncio.QueueFull:
-                    session_opt.dropped_frames += 1
+                    # Drop oldest to keep latency low (circular), don't spam frontend with RATE_LIMITED
+                    try:
+                        session_opt.audio_queue.get_nowait()
+                        session_opt.dropped_frames += 1
+                    except asyncio.QueueEmpty:
+                        pass
+                    try:
+                        session_opt.audio_queue.put_nowait(frame)
+                        session_opt.frames_received += 1
+                        session_opt.bytes_received += len(frame)
+                        session_opt.last_frame_at = time.time()
+                    except asyncio.QueueFull:
+                        pass
                     logger.debug(
-                        "audio_queue full dropped_frames=%s qsize=%s session_id=%s",
+                        "audio_queue full (circular) dropped_frames=%s qsize=%s session_id=%s",
                         session_opt.dropped_frames,
                         session_opt.audio_queue.qsize(),
                         current_session_id,
                     )
-                    await _send_error(
-                        websocket, "RATE_LIMITED", "Audio queue full, dropping chunk"
-                    )
+                    # Not sending RATE_LIMITED to frontend — keep UI as Listening, not error
                     continue
             else:
                 # Unknown message form

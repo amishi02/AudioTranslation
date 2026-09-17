@@ -80,7 +80,7 @@ class Settings(BaseSettings):
     audio_target_sample_rate: int | None = Field(default=16000)
     audio_channels: int | None = Field(default=1)
     audio_chunk_ms: int | None = Field(default=60)
-    audio_queue_maxsize: int = Field(default=64, ge=1, le=1024)
+    audio_queue_maxsize: int = Field(default=128, ge=1, le=1024)
     max_audio_frame_bytes: int = Field(default=65536, ge=1024, le=1048576)
     max_json_bytes: int = Field(default=65536, ge=1024, le=1048576)
 

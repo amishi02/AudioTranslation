@@ -13,7 +13,9 @@ class UnifiedPipeline(TranslationPipeline):
         self._unified = unified
 
     async def start_session(self, session: TranslationSession) -> None:
-        await self._unified.start_session(session.session_id, session.source_language, session.target_language)
+        await self._unified.start_session(
+            session.session_id, session.source_language, session.target_language
+        )
 
     async def push_audio(self, session_id: str, pcm: bytes) -> None:
         await self._unified.push_audio(session_id, pcm)

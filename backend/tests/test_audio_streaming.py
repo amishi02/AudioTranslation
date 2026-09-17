@@ -32,7 +32,10 @@ def test_audio_spam_no_crash_and_backpressure():
                 if m.get("type") == "session.ended":
                     found_ended = True
                     break
-                if m.get("type") in ("transcript", "translation") or m.get("code") == "RATE_LIMITED":
+                if (
+                    m.get("type") in ("transcript", "translation")
+                    or m.get("code") == "RATE_LIMITED"
+                ):
                     continue
             except Exception:
                 break

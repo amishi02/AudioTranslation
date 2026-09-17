@@ -29,7 +29,12 @@ def normalize_translation(raw: dict, session_id: str) -> TranslationEvent:
     """Normalize translation raw -> TranslationEvent."""
     # Raw shapes: {"source_text":"Hello", "translated_text":"...", "segment_id":1, "is_final":...}
     src = raw.get("source_text") or raw.get("sourceText") or raw.get("text") or ""
-    tgt = raw.get("translated_text") or raw.get("translatedText") or raw.get("translation") or ""
+    tgt = (
+        raw.get("translated_text")
+        or raw.get("translatedText")
+        or raw.get("translation")
+        or ""
+    )
     seg = int(raw.get("segment_id") or 1)
     is_final = bool(raw.get("is_final") or False)
     status = "final" if is_final else "partial"
@@ -44,7 +49,9 @@ def normalize_translation(raw: dict, session_id: str) -> TranslationEvent:
     )
 
 
-def normalize_unified(raw: dict, session_id: str) -> tuple[TranscriptEvent, TranslationEvent]:
+def normalize_unified(
+    raw: dict, session_id: str
+) -> tuple[TranscriptEvent, TranslationEvent]:
     """Normalize unified raw -> (transcript, translation) pair."""
     # Unified mock returns {"source_text","translated_text","segment_id","is_final"}
     src = raw.get("source_text") or ""
@@ -54,6 +61,15 @@ def normalize_unified(raw: dict, session_id: str) -> tuple[TranscriptEvent, Tran
     status = "final" if is_final else "partial"
     sid = raw.get("session_id") or session_id
     ts = time.time()
-    tr = TranscriptEvent(session_id=sid, segment_id=seg, status=status, text=src, timestamp=ts)
-    tl = TranslationEvent(session_id=sid, segment_id=seg, status=status, source_text=src, translated_text=tgt, timestamp=ts)
+    tr = TranscriptEvent(
+        session_id=sid, segment_id=seg, status=status, text=src, timestamp=ts
+    )
+    tl = TranslationEvent(
+        session_id=sid,
+        segment_id=seg,
+        status=status,
+        source_text=src,
+        translated_text=tgt,
+        timestamp=ts,
+    )
     return tr, tl

@@ -51,49 +51,49 @@ Replace the mock STT with a real, free/self-hosted streaming-capable speech-to-t
 
 ### Model Evaluation & Selection
 
-- [ ] P7-MODEL-001 Evaluate free/self-hosted streaming STT candidate 1: `faster-whisper` (Systran) + `whisper-small/medium` or `distil-whisper` — document license (MIT/Apache-2.0 for code; model is MIT/Apache per variant), language coverage, size/VRAM, CPU vs GPU latency, streaming support (native chunk-based), partial-update approach
-- [ ] P7-MODEL-002 Evaluate STT candidate 2: `openai/whisper.cpp` or `vosk` as lightweight alternative — same criteria
-- [ ] P7-MODEL-003 Record model comparison ADR/doc section with latency, quality, resource, and licensing trade-offs
-- [ ] P7-MODEL-004 Select one production STT model/provider for Phase 7 (allow `STT_PROVIDER=whisper|cpp|mock` env switch) and document chosen `STT_MODEL` name
+- [x] P7-MODEL-001 Evaluate free/self-hosted streaming STT candidate 1: `faster-whisper` (Systran) + `whisper-small/medium` or `distil-whisper` — document license (MIT/Apache-2.0 for code; model is MIT/Apache per variant), language coverage, size/VRAM, CPU vs GPU latency, streaming support (native chunk-based), partial-update approach
+- [x] P7-MODEL-002 Evaluate STT candidate 2: `openai/whisper.cpp` or `vosk` as lightweight alternative — same criteria
+- [x] P7-MODEL-003 Record model comparison ADR/doc section with latency, quality, resource, and licensing trade-offs
+- [x] P7-MODEL-004 Select one production STT model/provider for Phase 7 (allow `STT_PROVIDER=whisper|cpp|mock` env switch) and document chosen `STT_MODEL` name
 
 ### Backend — Real STT Provider
 
-- [ ] P7-BE-001 Implement `backend/app/providers/stt/whisper.py` (or provider-named file) `WhisperSTTProvider` (or selected) implementing `STTProvider` interface
-- [ ] P7-BE-002 Implement model loading during app startup or lazily on first `start_session` — document choice and lifespan; release resources on shutdown
-- [ ] P7-BE-003 Implement `start_session(session_id, source_language)`: per-session `segments` dict, `segment_id` counter, audio buffer per session (accumulated PCM until model produces chunk boundary)
-- [ ] P7-BE-004 Implement `push_audio(session_id, pcm_bytes)`: accumulate PCM in session buffer, dispatch to model inference path (streaming chunk or buffered window)
-- [ ] P7-BE-005 Implement `poll_events(session_id)`: return `[TranscriptEvent]` raws for normalizer — emit `partial` on incremental hypothesis, `final` on VAD/silence or fixed segment boundary
-- [ ] P7-BE-006 Handle `end_session(session_id)`: flush buffered audio → produce last `final` event if non-empty buffer, then release per-session state (not global model weights)
-- [ ] P7-BE-007 Map source language codes (`en`, `hi`, etc.) correctly to model language parameter; emit `UNSUPPORTED_LANGUAGE` if `source_language` not feasible for model variant
-- [ ] P7-BE-008 Add error mapping: `MODEL_NOT_READY` when inference called before init, `MODEL_ERROR` on inference failure (log inference error with `session_id`, not audio bytes)
-- [ ] P7-BE-009 Persist chosen audio format alignment: confirm provider consumes PCM S16LE mono 16 kHz chunks directly; if resampling required, document path
+- [x] P7-BE-001 Implement `backend/app/providers/stt/whisper.py` (or provider-named file) `WhisperSTTProvider` (or selected) implementing `STTProvider` interface
+- [x] P7-BE-002 Implement model loading during app startup or lazily on first `start_session` — document choice and lifespan; release resources on shutdown
+- [x] P7-BE-003 Implement `start_session(session_id, source_language)`: per-session `segments` dict, `segment_id` counter, audio buffer per session (accumulated PCM until model produces chunk boundary)
+- [x] P7-BE-004 Implement `push_audio(session_id, pcm_bytes)`: accumulate PCM in session buffer, dispatch to model inference path (streaming chunk or buffered window)
+- [x] P7-BE-005 Implement `poll_events(session_id)`: return `[TranscriptEvent]` raws for normalizer — emit `partial` on incremental hypothesis, `final` on VAD/silence or fixed segment boundary
+- [x] P7-BE-006 Handle `end_session(session_id)`: flush buffered audio → produce last `final` event if non-empty buffer, then release per-session state (not global model weights)
+- [x] P7-BE-007 Map source language codes (`en`, `hi`, etc.) correctly to model language parameter; emit `UNSUPPORTED_LANGUAGE` if `source_language` not feasible for model variant
+- [x] P7-BE-008 Add error mapping: `MODEL_NOT_READY` when inference called before init, `MODEL_ERROR` on inference failure (log inference error with `session_id`, not audio bytes)
+- [x] P7-BE-009 Persist chosen audio format alignment: confirm provider consumes PCM S16LE mono 16 kHz chunks directly; if resampling required, document path
 
 ### Pipeline & Normalization
 
-- [ ] P7-PIPE-001 Update `CascadedPipeline` to forward `audio → real STT → poll → normalize` while translation remains mock for this phase
-- [ ] P7-PIPE-002 Extend `EventNormalizer` to map real STT provider raw events (e.g., `{"text":"Hello my","is_final":false}`) into normalized `TranscriptEvent` with correct `segment_id`+`status`
-- [ ] P7-PIPE-003 Define segment boundary policy: silence threshold, chunk-window count, or model-provided `is_final` — document policy + parameter names
-- [ ] P7-PIPE-004 Add per-segment state `SegmentState {id, partial_text, stable_text, status}` managed inside STTProvider or pipeline so `poll`/`normalize` emits consistent `segment_id` progression
+- [x] P7-PIPE-001 Update `CascadedPipeline` to forward `audio → real STT → poll → normalize` while translation remains mock for this phase
+- [x] P7-PIPE-002 Extend `EventNormalizer` to map real STT provider raw events (e.g., `{"text":"Hello my","is_final":false}`) into normalized `TranscriptEvent` with correct `segment_id`+`status`
+- [x] P7-PIPE-003 Define segment boundary policy: silence threshold, chunk-window count, or model-provided `is_final` — document policy + parameter names
+- [x] P7-PIPE-004 Add per-segment state `SegmentState {id, partial_text, stable_text, status}` managed inside STTProvider or pipeline so `poll`/`normalize` emits consistent `segment_id` progression
 
 ### Frontend — Transcript Stabilization
 
-- [ ] P7-FE-001 Update `src/hooks/useTranscript.js` or `useSessionState.js` reducer to enforce: `partial` for existing `id` → replace, `final` for existing `id` → commit & start new active slot
-- [ ] P7-FE-002 Ensure `Transcript.jsx` renders finalized list separate from active partial (visual class `partial` vs `final`, e.g., italic/lighter vs solid)
-- [ ] P7-FE-003 Ensure translation panel does not regress (it still uses mock translation in this phase; its STT-driven trigger remains wired)
+- [x] P7-FE-001 Update `src/hooks/useTranscript.js` or `useSessionState.js` reducer to enforce: `partial` for existing `id` → replace, `final` for existing `id` → commit & start new active slot
+- [x] P7-FE-002 Ensure `Transcript.jsx` renders finalized list separate from active partial (visual class `partial` vs `final`, e.g., italic/lighter vs solid)
+- [x] P7-FE-003 Ensure translation panel does not regress (it still uses mock translation in this phase; its STT-driven trigger remains wired)
 
 ### Configuration
 
-- [ ] P7-CFG-001 Environment: `STT_PROVIDER=whisper`, `STT_MODEL=openai/whisper-small` (or `distil-whisper-small`), `STT_DEVICE=cpu|cuda`, `STT_COMPUTE_TYPE=float16|int8` — with invalid-value validation and `MODEL_NOT_READY` readiness
-- [ ] P7-CFG-002 Readiness: `GET /health/ready` returns `{stt_ready, stt_model, pipeline}` based on real provider `is_ready()`
+- [x] P7-CFG-001 Environment: `STT_PROVIDER=whisper`, `STT_MODEL=openai/whisper-small` (or `distil-whisper-small`), `STT_DEVICE=cpu|cuda`, `STT_COMPUTE_TYPE=float16|int8` — with invalid-value validation and `MODEL_NOT_READY` readiness
+- [x] P7-CFG-002 Readiness: `GET /health/ready` returns `{stt_ready, stt_model, pipeline}` based on real provider `is_ready()`
 
 ### Testing
 
-- [ ] P7-TEST-001 Unit: `WhisperSTTProvider` loads or fakes load in test mode; validates session lifecycle (`start/push/poll/end`)
-- [ ] P7-TEST-002 Unit: `EventNormalizer` mapping for real STT raws (partial vs final) preserves `segment_id`
-- [ ] P7-TEST-003 Integration: WS with real STT provider — send 10 binary chunks (pre-recorded fixture WAV/PCM bytes) → expect ordered partials sharing `segment_id` then `final` for same `segment_id`
-- [ ] P7-TEST-004 Frontend unit: `useTranscript` reducer with real-shaped events — verify no duplicate final line for same `segment_id`
-- [ ] P7-TEST-005 End-to-end smoke: live mic for ~5 s produces incremental transcript in UI (manual or recorded fixture); `time_to_first_transcript` observed and logged
-- [ ] P7-TEST-006 Model smoke: validate language mapping and error path for unsupported language code
+- [x] P7-TEST-001 Unit: `WhisperSTTProvider` loads or fakes load in test mode; validates session lifecycle (`start/push/poll/end`)
+- [x] P7-TEST-002 Unit: `EventNormalizer` mapping for real STT raws (partial vs final) preserves `segment_id`
+- [x] P7-TEST-003 Integration: WS with real STT provider — send 10 binary chunks (pre-recorded fixture WAV/PCM bytes) → expect ordered partials sharing `segment_id` then `final` for same `segment_id`
+- [x] P7-TEST-004 Frontend unit: `useTranscript` reducer with real-shaped events — verify no duplicate final line for same `segment_id`
+- [x] P7-TEST-005 End-to-end smoke: live mic for ~5 s produces incremental transcript in UI (manual or recorded fixture); `time_to_first_transcript` observed and logged
+- [x] P7-TEST-006 Model smoke: validate language mapping and error path for unsupported language code
 
 ---
 

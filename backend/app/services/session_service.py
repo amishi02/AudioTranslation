@@ -108,7 +108,7 @@ class SessionService:
             pipeline = session.pipeline
             if pipeline is not None:
                 try:
-                    await pipeline.end_session(session_id)  # type: ignore[union-attr]
+                    await pipeline.end_session(session_id)  # type: ignore[attr-defined]
                 except Exception:
                     pass
             # Cancel processor task if present

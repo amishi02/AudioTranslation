@@ -23,6 +23,7 @@ export function useAudioRecorder() {
   const streamRef = useRef(null);
   const ctxRef = useRef(null);
   const workletRef = useRef(null);
+  const sinkRef = useRef(null);
   const sourceRef = useRef(null);
   const accumulatorRef = useRef([]);
   const accumulatorLenRef = useRef(0);
@@ -41,6 +42,11 @@ export function useAudioRecorder() {
     try {
       if (node && node.port) node.port.close();
       if (node) node.disconnect();
+    } catch {
+      void 0;
+    }
+    try {
+      if (sinkRef.current) sinkRef.current.disconnect();
     } catch {
       void 0;
     }
@@ -69,6 +75,7 @@ export function useAudioRecorder() {
     streamRef.current = null;
     ctxRef.current = null;
     workletRef.current = null;
+    sinkRef.current = null;
     sourceRef.current = null;
     resetAccumulator();
     setMicStatus("idle");
@@ -103,6 +110,7 @@ export function useAudioRecorder() {
       let node;
       try {
         ctx = createAudioContext(AUDIO_TARGET_SAMPLE_RATE);
+        if (ctx.state === "suspended" && ctx.resume) await ctx.resume();
         await attachWorklet(ctx);
         node = new AudioWorkletNode(ctx, "audio-processor");
       } catch (e) {
@@ -119,6 +127,11 @@ export function useAudioRecorder() {
       const source = ctx.createMediaStreamSource(stream);
       sourceRef.current = source;
       source.connect(node);
+      const sink = ctx.createGain();
+      sink.gain.value = 0;
+      node.connect(sink);
+      sink.connect(ctx.destination);
+      sinkRef.current = sink;
 
       const cfg = getAudioConfig(ctx);
       console.log(`[audio] actualRate=${cfg.actualSampleRate} target=${cfg.targetSampleRate} chunk=${cfg.chunkSamples}@${cfg.chunkMs}ms`);
@@ -127,8 +140,9 @@ export function useAudioRecorder() {
         const float32 = event.data;
         if (!(float32 instanceof Float32Array)) return;
 
-        if (wsStatusRef && wsStatusRef.current && wsStatusRef.current !== "connected" && wsStatusRef.current !== "listening") {
-          console.debug("[audio] dropped_chunk_backpressure ws=", wsStatusRef.current);
+        const blocked = !["ready", "listening"].includes(wsStatusRef?.current);
+        if (blocked) {
+          console.debug("[audio] dropped_chunk_backpressure ws=", wsStatusRef?.current);
           return;
         }
 
