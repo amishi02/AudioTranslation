@@ -41,6 +41,12 @@ function App() {
     onErrorEvent: (event) => {
       setWsError(event.message || event.code);
     },
+    onTranscript: (event) => {
+      session.applyTranscriptEvent(event);
+    },
+    onTranslation: (event) => {
+      session.applyTranslationEvent(event);
+    },
   });
 
   // P3-INT-001: fetch health + capabilities on mount
@@ -161,14 +167,8 @@ function App() {
           ? CONNECTION_STATES.CONNECTING
           : CONNECTION_STATES.IDLE;
 
-  // Placeholder segments for Phase 3 shell (no WS yet)
   const transcriptSegments = session.segments;
-  const translationSegments = session.segments.map((s) => ({
-    id: s.id,
-    translatedText: s.text ? `[${s.text}]` : "",
-    sourceText: s.text,
-    status: s.status,
-  }));
+  const translationSegments = session.translationSegments;
 
   return (
     <>
@@ -184,19 +184,10 @@ function App() {
         bannerMessage={bannerMessage}
         onRetry={handleRetryHealth}
         onDismiss={handleDismissBanner}
-        transcriptSegments={transcriptSegments}
-        transcriptActive={session.activeSegment}
-        translationSegments={translationSegments}
-        translationActive={
-          session.activeSegment
-            ? {
-                id: session.activeSegment.id,
-                translatedText: `[${session.activeSegment.text}]`,
-                sourceText: session.activeSegment.text,
-                status: session.activeSegment.status,
-              }
-            : null
-        }
+      transcriptSegments={transcriptSegments}
+      transcriptActive={session.activeSegment}
+      translationSegments={translationSegments}
+      translationActive={session.translationActive}
       canStart={effectiveCanStart}
       validationError={validationError}
       backendHealthy={backendHealthy}

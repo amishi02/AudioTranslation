@@ -24,17 +24,15 @@ def test_audio_spam_no_crash_and_backpressure():
         # Try to collect up to 5 messages that might be RATE_LIMITED
         # Use try to avoid blocking
         ws.send_json({"type": "stop"})
-        # The next message should be session.ended (maybe after some RATE_LIMITED)
-        # Collect until ended or error
+        # Drain until session.ended — Phase 6 emits transcript/translation before ended (100 pushes → 200 events)
         found_ended = False
-        for _ in range(10):
+        for _ in range(300):
             try:
                 m = ws.receive_json()
                 if m.get("type") == "session.ended":
                     found_ended = True
                     break
-                # If RATE_LIMITED, that's expected
-                if m.get("code") == "RATE_LIMITED":
+                if m.get("type") in ("transcript", "translation") or m.get("code") == "RATE_LIMITED":
                     continue
             except Exception:
                 break

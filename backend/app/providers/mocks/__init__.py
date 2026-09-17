@@ -1,0 +1,1 @@
+"""Mock providers for Phase 6 — deterministic, no GPU."""

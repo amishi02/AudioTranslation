@@ -31,3 +31,5 @@ class TranslationSession:
     last_frame_at: float | None = None
     # Processor task — set by api/websocket handler
     processor_task: asyncio.Task[None] | None = None
+    # Pipeline instance for this session (Phase 6) — avoids global
+    pipeline: object | None = None

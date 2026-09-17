@@ -30,12 +30,31 @@ async def _send_error(websocket: WebSocket, code: str, message: str) -> None:
     await websocket.send_json(err.model_dump())
 
 
-async def _processor_loop(session: TranslationSession) -> None:
-    """Stub processor — drains queue for Phase 4 (no model)."""
+async def _processor_loop(session: TranslationSession, websocket: WebSocket) -> None:
+    """Phase 6: audio_queue -> pipeline -> normalized events -> WS."""
     try:
         while True:
-            _ = await session.audio_queue.get()
-            # Phase 4 stub: just drain; later phases will call pipeline here
+            pcm: bytes = await session.audio_queue.get()
+            pipeline = session.pipeline
+            if pipeline is None:
+                continue
+            try:
+                await pipeline.push_audio(session.session_id, pcm)  # type: ignore[union-attr]
+                events = await pipeline.poll_events(session.session_id)  # type: ignore[union-attr]
+                for ev in events:
+                    try:
+                        await websocket.send_json(ev)
+                    except Exception:
+                        # WS may be closed
+                        return
+            except Exception as exc:
+                # Map model errors to error event
+                code = getattr(exc, "code", "MODEL_ERROR")
+                msg = str(exc)
+                try:
+                    await websocket.send_json({"type": "error", "code": code, "message": msg})
+                except Exception:
+                    return
     except asyncio.CancelledError:
         return
 
@@ -125,9 +144,9 @@ async def translate_ws(websocket: WebSocket) -> None:
                         await _send_error(websocket, code, clean)
                         continue
                     current_session_id = session_id
-                    # Start stub processor task P4-WS-009
+                    # Start processor task (Phase 6: pipeline)
                     session.processor_task = asyncio.create_task(
-                        _processor_loop(session)
+                        _processor_loop(session, websocket)
                     )
                     processor_task = session.processor_task
                     # Emit session.ready

@@ -55,13 +55,18 @@ def test_ws_binary_audio_accepted():
         )
         ready = ws.receive_json()
         assert ready["type"] == "session.ready"
-        # Send 5 valid audio frames (960*2 bytes = 1920)
+        # Send 5 valid audio frames (960*2 bytes = 1920) — Phase 6 will generate transcript/translation
         for _ in range(5):
             ws.send_bytes(b"\x00\x01" * 960)
-        # Stop should still work
         ws.send_json({"type": "stop"})
-        ended = ws.receive_json()
-        assert ended["type"] == "session.ended"
+        # Drain until session.ended (transcript/translation may interleave)
+        found_ended = False
+        for _ in range(20):
+            msg = ws.receive_json()
+            if msg["type"] == "session.ended":
+                found_ended = True
+                break
+        assert found_ended
 
 
 def test_ws_stop_and_ended():

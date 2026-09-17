@@ -60,14 +60,27 @@ class SessionService:
             audio_queue=queue,
             created_at=time.time(),
         )
+        # Create pipeline per session (Phase 6) — env-driven via PIPELINE_TYPE
+        try:
+            from app.services.pipeline.factory import create_and_init_pipeline
+
+            pipeline = await create_and_init_pipeline()
+            session.pipeline = pipeline
+            await pipeline.start_session(session)
+        except ValueError as ve:
+            # Unsupported pipeline
+            raise ValueError(str(ve)) from ve
+        except Exception as e:
+            raise ValueError(f"MODEL_ERROR: {e}") from e
         async with self._lock:
             self._sessions[session_id] = session
             self._ws_index[id(websocket)] = session_id
         logger.info(
-            "session_created session_id=%s src=%s tgt=%s",
+            "session_created session_id=%s src=%s tgt=%s pipeline=%s",
             session_id,
             source_language,
             target_language,
+            settings.pipeline_type or "cascaded",
         )
         return session
 
@@ -91,6 +104,13 @@ class SessionService:
                 self._ws_index.pop(k, None)
         if session is not None:
             session.state = "ended"
+            # Pipeline cleanup
+            pipeline = session.pipeline
+            if pipeline is not None:
+                try:
+                    await pipeline.end_session(session_id)  # type: ignore[union-attr]
+                except Exception:
+                    pass
             # Cancel processor task if present
             task = session.processor_task
             if task is not None and not task.done():

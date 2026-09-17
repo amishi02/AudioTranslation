@@ -6,7 +6,7 @@ import { createWebSocketClient } from "../services/websocket.js";
 import { CONNECTION_STATES } from "../utils/constants.js";
 import { getWsUrl } from "../config/environment.js";
 
-export function useWebSocket({ onSessionReady, onSessionEnded, onErrorEvent, onBinary } = {}) {
+export function useWebSocket({ onSessionReady, onSessionEnded, onErrorEvent, onBinary, onTranscript, onTranslation } = {}) {
   const [status, setStatus] = useState(CONNECTION_STATES.IDLE);
   const [sessionId, setSessionId] = useState(null);
   const [error, setError] = useState(null);
@@ -17,7 +17,6 @@ export function useWebSocket({ onSessionReady, onSessionEnded, onErrorEvent, onB
     const wsUrl = getWsUrl();
     const client = createWebSocketClient(wsUrl, {
       onEvent: (event) => {
-        // Handle server events
         if (event.type === "session.ready") {
           setSessionId(event.session_id);
           setStatus(CONNECTION_STATES.READY);
@@ -29,18 +28,21 @@ export function useWebSocket({ onSessionReady, onSessionEnded, onErrorEvent, onB
         } else if (event.type === "error") {
           const msg = event.message || event.code || "Unknown error";
           setError(msg);
-          // Map certain codes to status error
           if (event.code === "RATE_LIMITED") {
-            // keep active, just show error
+            // keep active
           } else if (event.code === "SESSION_ERROR") {
             setStatus(CONNECTION_STATES.IDLE);
           }
           if (onErrorEvent) onErrorEvent(event);
+        } else if (event.type === "transcript") {
+          if (onTranscript) onTranscript(event);
+          // Also set listening status when transcript flows
+          setStatus(CONNECTION_STATES.LISTENING);
+        } else if (event.type === "translation") {
+          if (onTranslation) onTranslation(event);
+          setStatus(CONNECTION_STATES.LISTENING);
         } else {
-          // Pass through other events (transcript etc for later phases)
-          if (onSessionReady && event.type === "transcript") {
-            // no-op for Phase 4
-          }
+          // ignore unknown
         }
       },
       onError: (err) => {
@@ -53,7 +55,7 @@ export function useWebSocket({ onSessionReady, onSessionEnded, onErrorEvent, onB
     });
     clientRef.current = client;
     return client;
-  }, [onSessionReady, onSessionEnded, onErrorEvent, onBinary]);
+  }, [onSessionReady, onSessionEnded, onErrorEvent, onBinary, onTranscript, onTranslation]);
 
   const startSession = useCallback(
     ({ sourceLanguage, targetLanguage }) => {

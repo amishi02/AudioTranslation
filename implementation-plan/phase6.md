@@ -4,17 +4,17 @@
 
 | Status | Count |
 |---|---:|
-| Completed | 0 |
+| Completed | 29 |
 | Partially Completed | 0 |
-| Remaining | 29 |
+| Remaining | 0 |
 | Blocked | 0 |
 | Total | 29 |
 
-Progress: 0%
+Progress: 100%
 
-Status: Not Started
+Status: Completed
 
-Last Updated: 2026-09-14
+Last Updated: 2026-09-16
 
 Related documentation: `docs/trd.md` §23-25 (provider abstraction, model adapter, selection), `docs/srs.md` §10 (translation architectures), `docs/Translation.md` §16-18 (model adapter, event protocol), `docs/websocket-protocol.md`, `AGENTS.md` (external integrations behind provider/service interfaces)
 
@@ -52,50 +52,50 @@ Establish the stable provider/model abstraction layer and the common normalized 
 
 ### Backend — Provider Abstractions
 
-- [ ] P6-MODEL-001 Define `backend/app/providers/base.py`: `BaseProvider` ABC with `async initialize()`, `is_ready() -> bool`, `async close()`, `health()` + error mapping via `ModelError`
-- [ ] P6-MODEL-002 Define `backend/app/providers/interfaces.py` or `base/{stt.py,translation.py,tts.py,speech_translation.py}`: `STTProvider(BaseProvider)` with `async start_session(session_id, lang)`, `async push_audio(session_id, pcm_bytes)`, `async poll_events(session_id) -> list[RawEvent]`
-- [ ] P6-MODEL-003 Define `TranslationProvider` interface with `async translate(text, source_lang, target_lang) -> str` + batched/streaming variant
-- [ ] P6-MODEL-004 Define `TTSProvider` interface with `async synthesize(text, lang) -> bytes` (PCM/WAV/opus marker)
-- [ ] P6-MODEL-005 Define `UnifiedSpeechTranslationProvider` interface with `async push_audio` + `async poll_events` returning both transcript and translation segments
-- [ ] P6-MODEL-006 Define `ModelError` hierarchy (`ModelNotReady`, `ModelInitError`, `InferenceError`) mapped to WS `error` codes
+- [x] P6-MODEL-001 Define `backend/app/providers/base.py`: `BaseProvider` ABC with `async initialize()`, `is_ready() -> bool`, `async close()`, `health()` + error mapping via `ModelError`
+- [x] P6-MODEL-002 Define `backend/app/providers/interfaces.py` or `base/{stt.py,translation.py,tts.py,speech_translation.py}`: `STTProvider(BaseProvider)` with `async start_session(session_id, lang)`, `async push_audio(session_id, pcm_bytes)`, `async poll_events(session_id) -> list[RawEvent]`
+- [x] P6-MODEL-003 Define `TranslationProvider` interface with `async translate(text, source_lang, target_lang) -> str` + batched/streaming variant
+- [x] P6-MODEL-004 Define `TTSProvider` interface with `async synthesize(text, lang) -> bytes` (PCM/WAV/opus marker)
+- [x] P6-MODEL-005 Define `UnifiedSpeechTranslationProvider` interface with `async push_audio` + `async poll_events` returning both transcript and translation segments
+- [x] P6-MODEL-006 Define `ModelError` hierarchy (`ModelNotReady`, `ModelInitError`, `InferenceError`) mapped to WS `error` codes
 
 ### Backend — Events & Schemas
 
-- [ ] P6-BE-001 Define normalized application events in `backend/app/schemas/events.py`: `TranscriptEvent`, `TranslationEvent`, `AudioOutputEvent`, `ErrorEvent`, `SessionEvent` union with `segment_id`, `status: Literal["partial","final"]`, `timestamp`, `session_id`
-- [ ] P6-BE-002 Implement `backend/app/services/event_normalizer.py` converting provider-specific `RawEvent` dicts into normalized Pydantic events (ensures frontend never depends on model output format)
-- [ ] P6-BE-003 Update `backend/app/schemas/websocket.py` server→client union to include `transcript`, `translation`, `audio.output.*`, `error`, `session.*` typed models
-- [ ] P6-BE-004 Add segment lifecycle helper `SegmentState` (`segment_id`, `stable_text`, `partial_text`, `status`) used by pipeline/normalizer
+- [x] P6-BE-001 Define normalized application events in `backend/app/schemas/events.py`: `TranscriptEvent`, `TranslationEvent`, `AudioOutputEvent`, `ErrorEvent`, `SessionEvent` union with `segment_id`, `status: Literal["partial","final"]`, `timestamp`, `session_id`
+- [x] P6-BE-002 Implement `backend/app/services/event_normalizer.py` converting provider-specific `RawEvent` dicts into normalized Pydantic events (ensures frontend never depends on model output format)
+- [x] P6-BE-003 Update `backend/app/schemas/websocket.py` server→client union to include `transcript`, `translation`, `audio.output.*`, `error`, `session.*` typed models
+- [x] P6-BE-004 Add segment lifecycle helper `SegmentState` (`segment_id`, `stable_text`, `partial_text`, `status`) used by pipeline/normalizer
 
 ### Backend — Pipeline
 
-- [ ] P6-PIPE-001 Define `backend/app/services/pipeline/base.py`: `TranslationPipeline` ABC with `start_session(session: TranslationSession)`, `push_audio(pcm_bytes)`, `poll_events() -> list[NormalizedEvent]`, `end_session()`, `is_ready()`
-- [ ] P6-PIPE-002 Implement `backend/app/services/pipeline/cascaded.py` `CascadedPipeline` (mock-backed): STT provider → translation provider on transcript chunks; append normalized events
-- [ ] P6-PIPE-003 Implement `backend/app/services/pipeline/unified.py` `UnifiedPipeline` (mock-backed): unified provider → normalized events
-- [ ] P6-PIPE-004 Implement `backend/app/services/pipeline/factory.py` `PipelineFactory.create(pipeline_type, settings)` selecting cascaded vs unified, raising `UNSUPPORTED_PIPELINE` for invalid type
-- [ ] P6-PIPE-005 Wire `SessionService` to create `pipeline = PipelineFactory.create(settings.pipeline_type)` per session and orchestrate `audio_queue → pipeline.push_audio → poll → send`
+- [x] P6-PIPE-001 Define `backend/app/services/pipeline/base.py`: `TranslationPipeline` ABC with `start_session(session: TranslationSession)`, `push_audio(pcm_bytes)`, `poll_events() -> list[NormalizedEvent]`, `end_session()`, `is_ready()`
+- [x] P6-PIPE-002 Implement `backend/app/services/pipeline/cascaded.py` `CascadedPipeline` (mock-backed): STT provider → translation provider on transcript chunks; append normalized events
+- [x] P6-PIPE-003 Implement `backend/app/services/pipeline/unified.py` `UnifiedPipeline` (mock-backed): unified provider → normalized events
+- [x] P6-PIPE-004 Implement `backend/app/services/pipeline/factory.py` `PipelineFactory.create(pipeline_type, settings)` selecting cascaded vs unified, raising `UNSUPPORTED_PIPELINE` for invalid type
+- [x] P6-PIPE-005 Wire `SessionService` to create `pipeline = PipelineFactory.create(settings.pipeline_type)` per session and orchestrate `audio_queue → pipeline.push_audio → poll → send`
 
 ### Backend — Mock Providers
 
-- [ ] P6-MODEL-007 Implement `backend/app/providers/mocks/mock_stt.py` deterministic mock: every N chunks emit partial `transcript` events with increasing text, finalize after silence/M chunks
-- [ ] P6-MODEL-008 Implement `backend/app/providers/mocks/mock_translation.py` (static map or passthrough with language-code suffix for visibility)
-- [ ] P6-MODEL-009 Implement `backend/app/providers/mocks/mock_tts.py` returning tiny synthetic WAV or stub bytes on `synthesize()`
-- [ ] P6-MODEL-010 Implement `backend/app/providers/mocks/mock_unified.py` emitting both transcript + translation events per segment
-- [ ] P6-CFG-001 Expand `backend/app/core/config.py` for provider selection: `PIPELINE_TYPE=cascaded`, `STT_PROVIDER=mock|real`, `TRANSLATION_PROVIDER`, `TTS_PROVIDER`, `UNIFIED_PROVIDER` + readiness reporting (`model_ready` reflects mock vs real)
+- [x] P6-MODEL-007 Implement `backend/app/providers/mocks/mock_stt.py` deterministic mock: every N chunks emit partial `transcript` events with increasing text, finalize after silence/M chunks
+- [x] P6-MODEL-008 Implement `backend/app/providers/mocks/mock_translation.py` (static map or passthrough with language-code suffix for visibility)
+- [x] P6-MODEL-009 Implement `backend/app/providers/mocks/mock_tts.py` returning tiny synthetic WAV or stub bytes on `synthesize()`
+- [x] P6-MODEL-010 Implement `backend/app/providers/mocks/mock_unified.py` emitting both transcript + translation events per segment
+- [x] P6-CFG-001 Expand `backend/app/core/config.py` for provider selection: `PIPELINE_TYPE=cascaded`, `STT_PROVIDER=mock|real`, `TRANSLATION_PROVIDER`, `TTS_PROVIDER`, `UNIFIED_PROVIDER` + readiness reporting (`model_ready` reflects mock vs real)
 
 ### Frontend
 
-- [ ] P6-FE-001 Update `src/services/websocket.js` to handle new server event types `transcript` + `translation` (+ `audio.output.*` stub)
-- [ ] P6-FE-002 Update `src/hooks/useSessionState.js` (or `useTranscript.js`) to apply normalized events: `transcript {segment_id,status}` → update active segment vs commit final (no duplication)
-- [ ] P6-FE-003 Verify `Transcript` + `Translation` components correctly render mock pipeline stream (replacement semantics from Phase 3)
-- [ ] P6-FE-004 Add debug toggle (dev-only) displaying raw WS event log for mock validation
+- [x] P6-FE-001 Update `src/services/websocket.js` to handle new server event types `transcript` + `translation` (+ `audio.output.*` stub)
+- [x] P6-FE-002 Update `src/hooks/useSessionState.js` (or `useTranscript.js`) to apply normalized events: `transcript {segment_id,status}` → update active segment vs commit final (no duplication)
+- [x] P6-FE-003 Verify `Transcript` + `Translation` components correctly render mock pipeline stream (replacement semantics from Phase 3)
+- [x] P6-FE-004 Add debug toggle (dev-only) displaying raw WS event log for mock validation
 
 ### Testing
 
-- [ ] P6-TEST-001 Unit: `EventNormalizer` mapping raw→normalized for both cascaded and unified mock shapes
-- [ ] P6-TEST-002 Unit: `CascadedPipeline` (mock providers) push_audio → poll produces normalized transcript + translation events
-- [ ] P6-TEST-003 Unit: `UnifiedPipeline` (mock) similar
-- [ ] P6-TEST-004 Integration: `SessionService` + bounded queue + `CascadedPipeline` via WS `TestClient` — binary frames → normalized transcript/translation events on WS
-- [ ] P6-TEST-005 Frontend: `useSessionState` update reducer with partial→partial→final sequence for same `segment_id`
+- [x] P6-TEST-001 Unit: `EventNormalizer` mapping raw→normalized for both cascaded and unified mock shapes
+- [x] P6-TEST-002 Unit: `CascadedPipeline` (mock providers) push_audio → poll produces normalized transcript + translation events
+- [x] P6-TEST-003 Unit: `UnifiedPipeline` (mock) similar
+- [x] P6-TEST-004 Integration: `SessionService` + bounded queue + `CascadedPipeline` via WS `TestClient` — binary frames → normalized transcript/translation events on WS
+- [x] P6-TEST-005 Frontend: `useSessionState` update reducer with partial→partial→final sequence for same `segment_id`
 
 ---
 
@@ -241,15 +241,15 @@ Frontend:
 
 ## 10. Acceptance Criteria
 
-- [ ] Provider interfaces defined (STT, Translation, TTS, Unified) with `initialize/is_ready/close`.
-- [ ] Mock STT/Translation/TTS/Unified providers implemented deterministically, no GPU/model dependency.
-- [ ] Common normalized event protocol (`transcript`/`translation` with `segment_id`, `status`, `timestamp`) documented and shared between pipelines.
-- [ ] `CascadedPipeline` (mock) produces transcript+translation pairs per audio chunk; `UnifiedPipeline` (mock) emits both.
-- [ ] `EventNormalizer` converts each provider raw shape → normalized events (tests for both paths).
-- [ ] `SessionService` owns pipeline per session; WS binary frames → pipeline → normalized events → JSON sent.
-- [ ] Frontend correctly applies partial vs final events (replace active, commit final, no dup lines) against mock stream.
-- [ ] `PIPELINE_TYPE` env selects pipeline; invalid value returns `UNSUPPORTED_PIPELINE` error.
-- [ ] All new unit/integration tests pass; lint/type still green.
+- [x] Provider interfaces defined (STT, Translation, TTS, Unified) with `initialize/is_ready/close`.
+- [x] Mock STT/Translation/TTS/Unified providers implemented deterministically, no GPU/model dependency.
+- [x] Common normalized event protocol (`transcript`/`translation` with `segment_id`, `status`, `timestamp`) documented and shared between pipelines.
+- [x] `CascadedPipeline` (mock) produces transcript+translation pairs per audio chunk; `UnifiedPipeline` (mock) emits both.
+- [x] `EventNormalizer` converts each provider raw shape → normalized events (tests for both paths).
+- [x] `SessionService` owns pipeline per session; WS binary frames → pipeline → normalized events → JSON sent.
+- [x] Frontend correctly applies partial vs final events (replace active, commit final, no dup lines) against mock stream.
+- [x] `PIPELINE_TYPE` env selects pipeline; invalid value returns `UNSUPPORTED_PIPELINE` error.
+- [x] All new unit/integration tests pass; lint/type still green.
 
 ## 11. Verification Procedure
 
@@ -296,10 +296,10 @@ npm run dev -- --host
 ## 14. Phase Completion Status
 
 - Total tasks: 29
-- Completed tasks: 0
+- Completed tasks: 29
 - Partially completed tasks: 0
-- Remaining tasks: 29
+- Remaining tasks: 0
 - Blocked tasks: 0
-- Overall progress: 0%
-- Acceptance criteria status: 0 / 9 satisfied
+- Overall progress: 100%
+- Acceptance criteria status: 9 / 9 satisfied
 
