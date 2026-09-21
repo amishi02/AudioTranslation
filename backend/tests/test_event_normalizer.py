@@ -23,6 +23,23 @@ def test_normalize_transcript_final():
     assert ev.segment_id == 2
 
 
+def test_normalize_transcript_whisper_shape():
+    """P7-TEST-002: real STT raw {session_id, segment_id, text, is_final} preserves segment_id."""
+    raw_partial = {"session_id": "s1", "segment_id": 1, "text": "Hello my", "is_final": False}
+    ev = normalize_transcript(raw_partial, "s1")
+    assert ev.segment_id == 1
+    assert ev.status == "partial"
+    assert ev.text == "Hello my"
+    raw_final = {"session_id": "s1", "segment_id": 1, "text": "Hello my name is John", "is_final": True}
+    ev2 = normalize_transcript(raw_final, "s1")
+    assert ev2.segment_id == 1
+    assert ev2.status == "final"
+    # next segment increments
+    raw_next = {"session_id": "s1", "segment_id": 2, "text": "Next utterance", "is_final": False}
+    ev3 = normalize_transcript(raw_next, "s1")
+    assert ev3.segment_id == 2
+
+
 def test_normalize_translation():
     raw = {
         "segment_id": 1,

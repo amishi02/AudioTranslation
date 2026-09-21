@@ -7,7 +7,7 @@ import logging
 import time
 
 from app.core.config import settings
-from app.providers.base import InferenceError, ModelNotReady
+from app.providers.base import InferenceError, ModelError, ModelNotReady
 from app.providers.interfaces import STTProvider
 
 logger = logging.getLogger(__name__)
@@ -16,6 +16,112 @@ logger = logging.getLogger(__name__)
 WINDOWED_FINAL_EVERY_S = 2.5
 SILENCE_THRESHOLD_MS = 700
 PARTIAL_THROTTLE_MS = 200
+
+# Whisper-supported ISO 639-1 codes (99 languages, per OpenAI Whisper).
+# Used for P7-BE-007 language validation.
+WHISPER_LANGS: frozenset[str] = frozenset(
+    {
+        "en",
+        "zh",
+        "de",
+        "es",
+        "ru",
+        "ko",
+        "fr",
+        "ja",
+        "pt",
+        "tr",
+        "pl",
+        "ca",
+        "nl",
+        "ar",
+        "sv",
+        "it",
+        "id",
+        "hi",
+        "fi",
+        "vi",
+        "he",
+        "uk",
+        "el",
+        "ms",
+        "cs",
+        "ro",
+        "da",
+        "hu",
+        "ta",
+        "no",
+        "th",
+        "ur",
+        "hr",
+        "bg",
+        "lt",
+        "la",
+        "mi",
+        "ml",
+        "cy",
+        "sk",
+        "te",
+        "fa",
+        "lv",
+        "bn",
+        "sr",
+        "az",
+        "sl",
+        "kn",
+        "et",
+        "mk",
+        "br",
+        "eu",
+        "is",
+        "hy",
+        "ne",
+        "mn",
+        "bs",
+        "kk",
+        "sq",
+        "sw",
+        "gl",
+        "mr",
+        "pa",
+        "si",
+        "km",
+        "sn",
+        "yo",
+        "so",
+        "af",
+        "oc",
+        "ka",
+        "be",
+        "tg",
+        "sd",
+        "gu",
+        "am",
+        "yi",
+        "lo",
+        "uz",
+        "fo",
+        "ht",
+        "ps",
+        "tk",
+        "nn",
+        "mt",
+        "sa",
+        "lb",
+        "my",
+        "bo",
+        "tl",
+        "mg",
+        "as",
+        "tt",
+        "haw",
+        "ln",
+        "ha",
+        "ba",
+        "jw",
+        "su",
+    }
+)
 
 
 def _pcm_bytes_to_float32(pcm: bytes) -> list[float]:
@@ -92,8 +198,13 @@ class WhisperSTTProvider(STTProvider):
                 raise ModelNotReady("STT model not ready")
         # Language mapping per P7-BE-007
         lang = source_language.strip().lower()
-        # Whisper supports ~99 languages; for Phase 7 we accept en,hi,es,fr,de and fallback to en for others
-        # If lang not in supported list, we still accept but log warning; real model will handle
+        if lang not in WHISPER_LANGS:
+            logger.warning(
+                "unsupported_language session_id=%s lang=%s", session_id[:8], lang
+            )
+            raise ModelError(
+                f"Language not supported: {lang}", code="UNSUPPORTED_LANGUAGE"
+            )
         self._sessions[session_id] = {
             "audio_buffer": bytearray(),
             "segment_id": 1,
@@ -105,6 +216,8 @@ class WhisperSTTProvider(STTProvider):
         }
 
     async def push_audio(self, session_id: str, pcm: bytes) -> None:
+        if not self.is_ready():
+            raise ModelNotReady("STT model not ready")
         st = self._sessions.get(session_id)
         if st is None:
             raise ModelNotReady(f"No STT session {session_id}")
@@ -121,6 +234,8 @@ class WhisperSTTProvider(STTProvider):
         st["count"] += 1
 
     async def poll_events(self, session_id: str) -> list[dict]:
+        if not self.is_ready():
+            raise ModelNotReady("STT model not ready")
         st = self._sessions.get(session_id)
         if st is None:
             return []
@@ -240,3 +355,17 @@ class WhisperSTTProvider(STTProvider):
             except Exception:
                 pass
         self._sessions.pop(session_id, None)
+
+
+# Module-level singleton for health/readiness (P7-CFG-002).
+# Shared across factory-created instances to reflect actual loaded state
+# without reloading weights per session. Factory should reuse this when
+# STT_PROVIDER=whisper.
+_whisper_singleton: WhisperSTTProvider | None = None
+
+
+def get_whisper_singleton() -> WhisperSTTProvider:
+    global _whisper_singleton
+    if _whisper_singleton is None:
+        _whisper_singleton = WhisperSTTProvider()
+    return _whisper_singleton

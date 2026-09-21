@@ -100,6 +100,8 @@ function App() {
     if (!effectiveCanStart) return;
     setWsError(null);
     audio.clearError();
+    // Clear old session content — new session should start fresh (fixed length, latest at bottom)
+    session.reset();
     session.setConnection(CONNECTION_STATES.CONNECTING);
     ws.startSession({ sourceLanguage, targetLanguage });
     const ok = await audio.startRecording(

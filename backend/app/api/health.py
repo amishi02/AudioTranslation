@@ -16,24 +16,28 @@ async def health_check() -> HealthResponse:
 
 @router.get("/health/ready", response_model=ReadyResponse, tags=["health"])
 async def readiness_check() -> ReadyResponse:
-    """Readiness — Phase 7: reflect STT provider readiness."""
+    """Readiness — Phase 7: reflect STT provider readiness (P7-CFG-002)."""
     pipeline = settings.pipeline_type or "cascaded"
-    # For Phase 7, model_ready reflects STT provider readiness; mock is always ready
     stt_provider = (settings.stt_provider or "mock").lower()
     if stt_provider == "mock":
         stt_ready = True
         model_ready = True
     else:
-        # For real provider, check if model is ready (lazy load may not yet have happened, so false until first session)
-        # We report True if provider would be ready after initialize, else False
-        # To avoid loading model on health check, we report based on whether faster-whisper is installed
         try:
             import importlib.util
 
             has_faster_whisper = importlib.util.find_spec("faster_whisper") is not None
-            # If installed, we consider ready as True (will load lazily)
-            stt_ready = has_faster_whisper
-            model_ready = has_faster_whisper
+            if not has_faster_whisper:
+                stt_ready = False
+                model_ready = False
+            else:
+                from app.providers.stt.whisper import get_whisper_singleton
+
+                singleton = get_whisper_singleton()
+                # stt_ready is accurate (true only after lazy load); model_ready is optimistic
+                # so /health/ready is 200 before first session while still truthfully reporting stt_ready
+                stt_ready = singleton.is_ready()
+                model_ready = has_faster_whisper
         except Exception:
             stt_ready = False
             model_ready = False

@@ -143,9 +143,13 @@ async def translate_ws(websocket: WebSocket) -> None:
                         )
                     except ValueError as ve:
                         msg_str = str(ve)
-                        # Extract code prefix if present
+                        # Extract code prefix if present (P7-BE-007/008)
                         if "UNSUPPORTED_LANGUAGE" in msg_str:
                             code = "UNSUPPORTED_LANGUAGE"
+                        elif "MODEL_NOT_READY" in msg_str:
+                            code = "MODEL_NOT_READY"
+                        elif "MODEL_ERROR" in msg_str:
+                            code = "MODEL_ERROR"
                         elif "INVALID_SESSION_CONFIG" in msg_str:
                             code = "INVALID_SESSION_CONFIG"
                         else:

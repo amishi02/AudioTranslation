@@ -17,9 +17,9 @@ def create_pipeline(pipeline_type: str | None = None) -> TranslationPipeline:
     if pt == "cascaded":
         stt_provider_name = (settings.stt_provider or "whisper").lower()
         if stt_provider_name in ("whisper", "faster_whisper", "faster-whisper"):
-            from app.providers.stt.whisper import WhisperSTTProvider
+            from app.providers.stt.whisper import get_whisper_singleton
 
-            stt = WhisperSTTProvider()
+            stt = get_whisper_singleton()
         elif stt_provider_name == "mock":
             stt = MockSTTProvider()
         else:

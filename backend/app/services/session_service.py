@@ -60,8 +60,9 @@ class SessionService:
             audio_queue=queue,
             created_at=time.time(),
         )
-        # Create pipeline per session (Phase 6) — env-driven via PIPELINE_TYPE
+        # Create pipeline per session (Phase 6-7) — env-driven via PIPELINE_TYPE
         try:
+            from app.providers.base import ModelError
             from app.services.pipeline.factory import create_and_init_pipeline
 
             pipeline = await create_and_init_pipeline()
@@ -70,6 +71,8 @@ class SessionService:
         except ValueError as ve:
             # Unsupported pipeline
             raise ValueError(str(ve)) from ve
+        except ModelError as me:  # P7-BE-007/008: preserve code (UNSUPPORTED_LANGUAGE, MODEL_NOT_READY)
+            raise ValueError(f"{me.code}: {me}") from me
         except Exception as e:
             raise ValueError(f"MODEL_ERROR: {e}") from e
         async with self._lock:

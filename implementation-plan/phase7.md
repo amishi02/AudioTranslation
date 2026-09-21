@@ -4,17 +4,17 @@
 
 | Status | Count |
 |---|---:|
-| Completed | 0 |
+| Completed | 31 |
 | Partially Completed | 0 |
-| Remaining | 31 |
+| Remaining | 0 |
 | Blocked | 0 |
 | Total | 31 |
 
-Progress: 0%
+Progress: 100%
 
-Status: Not Started
+Status: Completed
 
-Last Updated: 2026-09-14
+Last Updated: 2026-09-18
 
 Related documentation: `docs/trd.md` §11-13 (STT, incremental translation strategy), `docs/srs.md` §5 (FR-007..009), `docs/Translation.md` §8-10, `docs/prd.md` §11-13 (partial/final, display behavior), `docs/websocket-protocol.md` (Transcript event)
 
@@ -187,13 +187,13 @@ Frontend:
 
 ## 10. Acceptance Criteria
 
-- [ ] Free/self-hosted STT model selected and documented with license, languages, size/VRAM, CPU/GPU, streaming/partial notes — mock fallback preserved via `STT_PROVIDER=mock`.
-- [ ] `WhisperSTTProvider` (or chosen) implements `STTProvider` with per-session buffers and `segment_id` lifecycle; `is_ready()` correctly reflected in `/health/ready`.
-- [ ] Real continuous PCM no longer crashes; accumulating frames produce `partial` quickly (~< 1 s on laptop CPU for small variant) then `final` per policy.
-- [ ] Successive `partial` events for same `segment_id` replace (not duplicate) in frontend; `final` is stable and increments `segment_id` for next utterance.
-- [ ] `EventNormalizer` preserves `segment_id`/`status` correctly for real STT; mismapped shape would fail its tests.
-- [ ] Unsupported `source_language` yields `UNSUPPORTED_LANGUAGE` `error` event.
-- [ ] `npm run`/`pytest` tests covering provider→pipeline→WS path pass; `ruff`/`mypy` still green.
+- [x] Free/self-hosted STT model selected and documented with license, languages, size/VRAM, CPU/GPU, streaming/partial notes — mock fallback preserved via `STT_PROVIDER=mock`.
+- [x] `WhisperSTTProvider` (or chosen) implements `STTProvider` with per-session buffers and `segment_id` lifecycle; `is_ready()` correctly reflected in `/health/ready`.
+- [x] Real continuous PCM no longer crashes; accumulating frames produce `partial` quickly (~< 1 s on laptop CPU for small variant) then `final` per policy.
+- [x] Successive `partial` events for same `segment_id` replace (not duplicate) in frontend; `final` is stable and increments `segment_id` for next utterance.
+- [x] `EventNormalizer` preserves `segment_id`/`status` correctly for real STT; mismapped shape would fail its tests.
+- [x] Unsupported `source_language` yields `UNSUPPORTED_LANGUAGE` `error` event.
+- [x] `npm run`/`pytest` tests covering provider→pipeline→WS path pass; `ruff`/`mypy` still green.
 
 ## 11. Verification Procedure
 
@@ -248,10 +248,10 @@ npm run dev -- --host
 ## 14. Phase Completion Status
 
 - Total tasks: 31
-- Completed tasks: 0
+- Completed tasks: 31
 - Partially completed tasks: 0
-- Remaining tasks: 31
+- Remaining tasks: 0
 - Blocked tasks: 0
-- Overall progress: 0%
-- Acceptance criteria status: 0 / 7 satisfied
+- Overall progress: 100%
+- Acceptance criteria status: 7 / 7 satisfied
 

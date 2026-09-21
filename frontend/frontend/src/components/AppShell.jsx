@@ -98,7 +98,7 @@ export default function AppShell({
       </section>
 
       <footer className="app-footer">
-        <small>Frontend: React + Vite · Backend: FastAPI — see AGENTS.md</small>
+        <small>Real-Time Translation • Phase 5 • Low-latency streaming</small>
       </footer>
     </div>
   );

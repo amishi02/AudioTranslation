@@ -10,7 +10,7 @@ See ``backend/.env.example`` for the full template and
 
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -64,6 +64,42 @@ class Settings(BaseSettings):
     translation_model: str | None = None
     unified_model: str | None = None
     tts_model: str | None = None
+
+    @field_validator("stt_provider", mode="before")
+    @classmethod
+    def _validate_stt_provider(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        vv = str(v).strip().lower()
+        allowed = {"whisper", "faster_whisper", "faster-whisper", "mock"}
+        if vv not in allowed:
+            raise ValueError(f"STT_PROVIDER must be one of {sorted(allowed)}, got '{v}'")
+        # normalize faster_whisper variants to whisper
+        if vv in {"faster_whisper", "faster-whisper"}:
+            return "whisper"
+        return vv
+
+    @field_validator("stt_device", mode="before")
+    @classmethod
+    def _validate_stt_device(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        vv = str(v).strip().lower()
+        allowed = {"cpu", "cuda"}
+        if vv not in allowed:
+            raise ValueError(f"STT_DEVICE must be one of {sorted(allowed)}, got '{v}'")
+        return vv
+
+    @field_validator("stt_compute_type", mode="before")
+    @classmethod
+    def _validate_stt_compute(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        vv = str(v).strip().lower()
+        allowed = {"int8", "float16", "float32", "int8_float16", "int8_float32"}
+        if vv not in allowed:
+            raise ValueError(f"STT_COMPUTE_TYPE must be one of {sorted(allowed)}, got '{v}'")
+        return vv
 
     # --- Paths ---
     ws_v1_path: str = Field(default="/ws/v1/translate")
