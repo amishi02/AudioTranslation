@@ -4,17 +4,17 @@
 
 | Status | Count |
 |---|---:|
-| Completed | 0 |
+| Completed | 29 |
 | Partially Completed | 0 |
-| Remaining | 29 |
+| Remaining | 0 |
 | Blocked | 0 |
 | Total | 29 |
 
-Progress: 0%
+Progress: 100%
 
-Status: Not Started
+Status: Completed
 
-Last Updated: 2026-09-14
+Last Updated: 2026-09-18
 
 Related documentation: `docs/trd.md` §12-15 (translation, incremental strategies, cascaded advantages/limitations), `docs/Translation.md` §9-10 (translation layer, important issue with Architecture A), `docs/srs.md` §5 FR-010..013 (translation), `docs/prd.md` §13 (translation display), `docs/websocket-protocol.md` (Translation event)
 
@@ -51,57 +51,57 @@ Implement the real translation layer, address the unstable-STT partial problem e
 
 ### Model Evaluation & Selection
 
-- [ ] P8-MODEL-001 Evaluate free/self-hosted translation candidate 1: `Helsinki-NLP/opus-mt-*` (MarianMT) — per language pair — document license (Apache-2.0 for Marian, Opus-MT models CC-derived), pair coverage, model size (~300MB/pair), CPU latency, quality for en↔hi
-- [ ] P8-MODEL-002 Evaluate translation candidate 2: `facebook/nllb-200-distilled-600M` (Meta NLLB) — multilingual single model, Apache-2.0, larger (~2.3GB for 600M), broader coverage (200 languages), higher latency, quality trade-off
-- [ ] P8-MODEL-003 Record comparison ADR/doc and select `TRANSLATION_PROVIDER`/`TRANSLATION_MODEL` (allow `TRANSLATION_PROVIDER=mock|opus|nllb` env switch)
-- [ ] P8-MODEL-004 Document supported `(source→target)` pairs for chosen model and where to add pair-model files (Opus-MT: one checkpoint per pair)
+- [x] P8-MODEL-001 Evaluate free/self-hosted translation candidate 1: `Helsinki-NLP/opus-mt-*` (MarianMT) — per language pair — document license (Apache-2.0 for Marian, Opus-MT models CC-derived), pair coverage, model size (~300MB/pair), CPU latency, quality for en↔hi
+- [x] P8-MODEL-002 Evaluate translation candidate 2: `facebook/nllb-200-distilled-600M` (Meta NLLB) — multilingual single model, Apache-2.0, larger (~2.3GB for 600M), broader coverage (200 languages), higher latency, quality trade-off
+- [x] P8-MODEL-003 Record comparison ADR/doc and select `TRANSLATION_PROVIDER`/`TRANSLATION_MODEL` (allow `TRANSLATION_PROVIDER=mock|opus|nllb` env switch)
+- [x] P8-MODEL-004 Document supported `(source→target)` pairs for chosen model and where to add pair-model files (Opus-MT: one checkpoint per pair)
 
 ### Backend — Real Translation Provider
 
-- [ ] P8-BE-001 Implement `backend/app/providers/translation/opus.py` (or `nllb.py`) `OpusTranslationProvider` (or `NLLBTranslationProvider`) fulfilling `TranslationProvider` interface
-- [ ] P8-BE-002 Implement model loading during app startup or lazily on first `translate()` call (documented choice); load model/tokenizer per language pair on demand where Opus-MT per-pair
-- [ ] P8-BE-003 Implement `async def translate(self, text: str, source_lang: str, target_lang: str) -> str` calling `model.generate(tokenized_input)` behind executor if synchronous
-- [ ] P8-BE-004 Implement batching/cache helper so identical `(source_lang,target_lang,text)` repeated partials do not re-invoke inference unnecessarily
-- [ ] P8-BE-005 Map unsupported pair → `UNSUPPORTED_LANGUAGE` error; invalid language code normalization (`en`→`en`, `hi`→`hi`) with `INVALID_SESSION_CONFIG` if neither pair nor code is supported
-- [ ] P8-BE-006 Add provider-specific config fields: `translation_device`, `translation_compute_type`, `translation_max_length`, `translation_num_beams` (document defaults)
+- [x] P8-BE-001 Implement `backend/app/providers/translation/opus.py` (or `nllb.py`) `OpusTranslationProvider` (or `NLLBTranslationProvider`) fulfilling `TranslationProvider` interface
+- [x] P8-BE-002 Implement model loading during app startup or lazily on first `translate()` call (documented choice); load model/tokenizer per language pair on demand where Opus-MT per-pair
+- [x] P8-BE-003 Implement `async def translate(self, text: str, source_lang: str, target_lang: str) -> str` calling `model.generate(tokenized_input)` behind executor if synchronous
+- [x] P8-BE-004 Implement batching/cache helper so identical `(source_lang,target_lang,text)` repeated partials do not re-invoke inference unnecessarily
+- [x] P8-BE-005 Map unsupported pair → `UNSUPPORTED_LANGUAGE` error; invalid language code normalization (`en`→`en`, `hi`→`hi`) with `INVALID_SESSION_CONFIG` if neither pair nor code is supported
+- [x] P8-BE-006 Add provider-specific config fields: `translation_device`, `translation_compute_type`, `translation_max_length`, `translation_num_beams` (document defaults)
 
 ### Pipeline — Incremental Translation Strategy
 
-- [ ] P8-PIPE-001 Select and document incremental strategy per TRD §13:
+- [x] P8-PIPE-001 Select and document incremental strategy per TRD §13:
   - Strategy A (translate every `partial` as-is)
   - Strategy B (only stable phrases)
   - Strategy C (only `final` segments — most stable, higher latency)
   - Strategy D (hybrid: stable immediate + rate-limited partial updates) — recommended default
-- [ ] P8-PIPE-002 Extend `CascadedPipeline` to track `SegmentState {segment_id, transcript_text, status, last_translation_text, last_translated_at}` so decision uses transcript `status`
-- [ ] P8-PIPE-003 Wire cascaded loop: `stt_events = await stt.poll_events()` → for each `transcript` event, apply strategy → call `translation_provider.translate()` when appropriate → emit `TranslationEvent` sharing `segment_id`
-- [ ] P8-PIPE-004 Add de-duplication: if `translated_text == last_translation_text` skip emitting the event (avoid WS churn)
-- [ ] P8-PIPE-005 Add rate limit for partial translations (e.g., at most 1 translation per 250 ms per segment id) to avoid flicker
-- [ ] P8-PIPE-006 Ensure `final` transcript always triggers a `final` translation emit (even if last partial was already sent) with identical `segment_id`
+- [x] P8-PIPE-002 Extend `CascadedPipeline` to track `SegmentState {segment_id, transcript_text, status, last_translation_text, last_translated_at}` so decision uses transcript `status`
+- [x] P8-PIPE-003 Wire cascaded loop: `stt_events = await stt.poll_events()` → for each `transcript` event, apply strategy → call `translation_provider.translate()` when appropriate → emit `TranslationEvent` sharing `segment_id`
+- [x] P8-PIPE-004 Add de-duplication: if `translated_text == last_translation_text` skip emitting the event (avoid WS churn)
+- [x] P8-PIPE-005 Add rate limit for partial translations (e.g., at most 1 translation per 250 ms per segment id) to avoid flicker
+- [x] P8-PIPE-006 Ensure `final` transcript always triggers a `final` translation emit (even if last partial was already sent) with identical `segment_id`
 
 ### Events & Session
 
-- [ ] P8-BE-007 Ensure `TranslationEvent` normalized shape `{type:"translation", session_id, segment_id, status, source_text, translated_text, timestamp}` is produced by `EventNormalizer` for real provider
-- [ ] P8-BE-008 Update `SessionService` pipeline orchestration to `gather` STT poll + translation dispatch without blocking `receive_task`
+- [x] P8-BE-007 Ensure `TranslationEvent` normalized shape `{type:"translation", session_id, segment_id, status, source_text, translated_text, timestamp}` is produced by `EventNormalizer` for real provider
+- [x] P8-BE-008 Update `SessionService` pipeline orchestration to `gather` STT poll + translation dispatch without blocking `receive_task`
 
 ### Frontend
 
-- [ ] P8-FE-001 Update `src/services/websocket.js` + `src/hooks/useSessionState.js` to handle `translation` events sharing `segment_id` with `transcript` events
-- [ ] P8-FE-002 Ensure `Translation.jsx` mirrors `Transcript.jsx` replacement semantics (partial replace, final commit) and shows `source_text` tooltip or small muted source line when useful
-- [ ] P8-FE-003 Display translation lag indicator (optional enhancement) when `partial` hasn't updated for `>500ms` — document if deferred
+- [x] P8-FE-001 Update `src/services/websocket.js` + `src/hooks/useSessionState.js` to handle `translation` events sharing `segment_id` with `transcript` events
+- [x] P8-FE-002 Ensure `Translation.jsx` mirrors `Transcript.jsx` replacement semantics (partial replace, final commit) and shows `source_text` tooltip or small muted source line when useful
+- [x] P8-FE-003 Display translation lag indicator (optional enhancement) when `partial` hasn't updated for `>500ms` — document if deferred
 
 ### Configuration
 
-- [ ] P8-CFG-001 Env: `TRANSLATION_PROVIDER`, `TRANSLATION_MODEL`, `TRANSLATION_DEVICE`, `TRANSLATION_PAIR_MAP` (for Opus multi-pair) with validation
-- [ ] P8-CFG-002 Readiness: readiness reflects `translation_ready` (no-op if translation is pure CPU/no-weight download already complete)
+- [x] P8-CFG-001 Env: `TRANSLATION_PROVIDER`, `TRANSLATION_MODEL`, `TRANSLATION_DEVICE`, `TRANSLATION_PAIR_MAP` (for Opus multi-pair) with validation
+- [x] P8-CFG-002 Readiness: readiness reflects `translation_ready` (no-op if translation is pure CPU/no-weight download already complete)
 
 ### Testing
 
-- [ ] P8-TEST-001 Unit: translation provider loads selected model (mocked HF download when missing) and translates `"Hello my name is John"` fixture deterministically
-- [ ] P8-TEST-002 Unit: `CascadedPipeline` incremental strategy — real STT events + mock translation, verify strategy D sends text-translation pairs respecting `status` and `segment_id`
-- [ ] P8-TEST-003 Unit: de-duplication and rate-limit: identical successive partials don't emit, subtly-changed source re-emits, `final` always emits
-- [ ] P8-TEST-004 Integration: WS with real STT + real translation (fixture PCM) → ordered `transcript` then `translation` events with matching `segment_id` per pair
-- [ ] P8-TEST-005 Frontend unit: `translation` event reducer (same semantics as `transcript`) — partial replace, final commit, no dup line
-- [ ] P8-TEST-006 Error path: unsupported pair `(en→xx_unknown)` yields `UNSUPPORTED_LANGUAGE` error instead of crashing
+- [x] P8-TEST-001 Unit: translation provider loads selected model (mocked HF download when missing) and translates `"Hello my name is John"` fixture deterministically
+- [x] P8-TEST-002 Unit: `CascadedPipeline` incremental strategy — real STT events + mock translation, verify strategy D sends text-translation pairs respecting `status` and `segment_id`
+- [x] P8-TEST-003 Unit: de-duplication and rate-limit: identical successive partials don't emit, subtly-changed source re-emits, `final` always emits
+- [x] P8-TEST-004 Integration: WS with real STT + real translation (fixture PCM) → ordered `transcript` then `translation` events with matching `segment_id` per pair
+- [x] P8-TEST-005 Frontend unit: `translation` event reducer (same semantics as `transcript`) — partial replace, final commit, no dup line
+- [x] P8-TEST-006 Error path: unsupported pair `(en→xx_unknown)` yields `UNSUPPORTED_LANGUAGE` error instead of crashing
 
 ---
 
@@ -209,14 +209,14 @@ Frontend:
 
 ## 10. Acceptance Criteria
 
-- [ ] Free/self-hosted translation model evaluated and chosen; `TRANSLATION_PROVIDER=mock|opus|nllb` env switch documented and loadable.
-- [ ] Real translation provider implements `TranslationProvider` with batched/cache help, language mapping, and `UNSUPPORTED_LANGUAGE` handling.
-- [ ] Cascaded pipeline wires STT transcripts → translation with documented strategy D (rate-limited partial, always-translate final, de-duplicated).
-- [ ] Every `transcript` and its paired `translation` share `segment_id` and their `status` values align (`partial`→`partial`, `final`→`final`).
-- [ ] Identical successive partials do not re-emit translation; subtly-changed source does; `final` always emits.
-- [ ] Frontend translation panel mirrors transcript stabilization (replace partial, commit final, coupled by id) with no duplicate lines.
-- [ ] WS with real STT+translation on fixture PCM produces ordered transcript+translation pairs per segment id.
-- [ ] Lint/type/test still green; backend readiness reflects translation provider if needed.
+- [x] Free/self-hosted translation model evaluated and chosen; `TRANSLATION_PROVIDER=mock|opus|nllb` env switch documented and loadable.
+- [x] Real translation provider implements `TranslationProvider` with batched/cache help, language mapping, and `UNSUPPORTED_LANGUAGE` handling.
+- [x] Cascaded pipeline wires STT transcripts → translation with documented strategy D (rate-limited partial, always-translate final, de-duplicated).
+- [x] Every `transcript` and its paired `translation` share `segment_id` and their `status` values align (`partial`→`partial`, `final`→`final`).
+- [x] Identical successive partials do not re-emit translation; subtly-changed source does; `final` always emits.
+- [x] Frontend translation panel mirrors transcript stabilization (replace partial, commit final, coupled by id) with no duplicate lines.
+- [x] WS with real STT+translation on fixture PCM produces ordered transcript+translation pairs per segment id.
+- [x] Lint/type/test still green; backend readiness reflects translation provider if needed.
 
 ## 11. Verification Procedure
 
@@ -271,10 +271,10 @@ npm run dev -- --host
 ## 14. Phase Completion Status
 
 - Total tasks: 29
-- Completed tasks: 0
+- Completed tasks: 29
 - Partially completed tasks: 0
-- Remaining tasks: 29
+- Remaining tasks: 0
 - Blocked tasks: 0
-- Overall progress: 0%
-- Acceptance criteria status: 0 / 8 satisfied
+- Overall progress: 100%
+- Acceptance criteria status: 8 / 8 satisfied
 

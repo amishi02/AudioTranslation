@@ -24,7 +24,19 @@ def create_pipeline(pipeline_type: str | None = None) -> TranslationPipeline:
             stt = MockSTTProvider()
         else:
             raise ValueError(f"UNSUPPORTED_STT_PROVIDER: {stt_provider_name}")
-        trans = MockTranslationProvider()
+        trans_provider_name = (settings.translation_provider or "mock").lower()
+        if trans_provider_name == "opus":
+            from app.providers.translation.opus import get_opus_singleton
+
+            trans = get_opus_singleton()
+        elif trans_provider_name == "nllb":
+            from app.providers.translation.nllb import get_nllb_singleton
+
+            trans = get_nllb_singleton()
+        elif trans_provider_name == "mock":
+            trans = MockTranslationProvider()
+        else:
+            raise ValueError(f"UNSUPPORTED_TRANSLATION_PROVIDER: {trans_provider_name}")
         return CascadedPipeline(stt, trans)
     if pt == "unified":
         unified = MockUnifiedProvider()

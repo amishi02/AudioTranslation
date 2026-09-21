@@ -37,18 +37,18 @@ If docs conflict, the plan prefers — in order — most-specific/latest doc, ex
 | Phase 5 | Browser Audio Pipeline & Real-time Streaming | getUserMedia, AudioContext/AudioWorklet, PCM S16LE mono 16 kHz, chunking, binary WS streaming, backend audio queue | Completed | 100% |
 | Phase 6 | Provider Abstraction, Mocks & Event Normalization | Base provider interfaces, mock STT/translation/TTS, common normalized event protocol, pipeline interface | Completed | 100% |
 | Phase 7 | Streaming STT & Transcript Stabilization | Real free/self-hosted streaming STT, partial/final handling, segment_id lifecycle, transcript stabilization, UI replacement semantics | Completed | 100% |
-| Phase 8 | Translation Layer & Cascaded Pipeline | Translation provider, partial/final translation, unstable-partial handling, cascaded STT→Translation→(TTS stub) orchestration | Not Started | 0% |
+| Phase 8 | Translation Layer & Cascaded Pipeline | Translation provider, partial/final translation, unstable-partial handling, cascaded STT→Translation→(TTS stub) orchestration | Completed | 100% |
 | Phase 9 | TTS & Unified Speech Translation & Pipeline Switching | TTS provider + playback, unified model evaluation & adapter, environment-configured pipeline selection, readiness gating | Not Started | 0% |
 | Phase 10 | Hardening, Performance, Testing & Production Readiness | Error taxonomy hardening, performance instrumentation, full test pyramid, E2E (cascaded + unified), benchmarking & arch decision | Not Started | 0% |
 
 ## Overall Progress
 
 - Total phases: **10**
-- Completed phases: **7**
+- Completed phases: **8**
 - In-progress phases: **0**
-- Not-started phases: **3**
+- Not-started phases: **2**
 - Blocked phases: **0**
-- Overall task progress: **174 / 273 tasks (64%)**
+- Overall task progress: **203 / 273 tasks (74%)**
 
 Progress is computed from the sum of every phase's checklist. Update it whenever a phase's checklist changes.
 

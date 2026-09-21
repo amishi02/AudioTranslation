@@ -101,6 +101,28 @@ class Settings(BaseSettings):
             raise ValueError(f"STT_COMPUTE_TYPE must be one of {sorted(allowed)}, got '{v}'")
         return vv
 
+    @field_validator("translation_provider", mode="before")
+    @classmethod
+    def _validate_translation_provider(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        vv = str(v).strip().lower()
+        allowed = {"mock", "opus", "nllb"}
+        if vv not in allowed:
+            raise ValueError(f"TRANSLATION_PROVIDER must be one of {sorted(allowed)}, got '{v}'")
+        return vv
+
+    @field_validator("translation_device", mode="before")
+    @classmethod
+    def _validate_translation_device(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        vv = str(v).strip().lower()
+        allowed = {"cpu", "cuda"}
+        if vv not in allowed:
+            raise ValueError(f"TRANSLATION_DEVICE must be one of {sorted(allowed)}, got '{v}'")
+        return vv
+
     # --- Paths ---
     ws_v1_path: str = Field(default="/ws/v1/translate")
     api_v1_prefix: str = Field(default="/api/v1")
@@ -109,6 +131,10 @@ class Settings(BaseSettings):
 
     # --- Device extras (Phase 7-9) ---
     translation_device: str | None = None
+    translation_compute_type: str | None = None
+    translation_max_length: int | None = Field(default=128, ge=1, le=512)
+    translation_num_beams: int | None = Field(default=1, ge=1, le=8)
+    translation_pair_map: str | None = None
     unified_device: str | None = None
     tts_device: str | None = None
 
