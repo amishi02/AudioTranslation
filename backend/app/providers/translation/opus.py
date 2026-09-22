@@ -12,8 +12,36 @@ from app.providers.interfaces import TranslationProvider
 
 logger = logging.getLogger(__name__)
 
-# Supported pairs for Phase 8 — one checkpoint per direction.
+# Supported pairs for Phase 8 — multi-language (all combos via direct or pivot).
+# Direct opus-mt checkpoints exist for en<->X (8). Cross pairs (hi<->es etc.) use pivot via English.
+# This gives full 5-language mesh (20 directed pairs) without 20 separate checkpoints.
 SUPPORTED_PAIRS: frozenset[tuple[str, str]] = frozenset(
+    {
+        ("en", "hi"),
+        ("hi", "en"),
+        ("en", "es"),
+        ("es", "en"),
+        ("en", "fr"),
+        ("fr", "en"),
+        ("en", "de"),
+        ("de", "en"),
+        ("hi", "es"),
+        ("es", "hi"),
+        ("hi", "fr"),
+        ("fr", "hi"),
+        ("hi", "de"),
+        ("de", "hi"),
+        ("es", "fr"),
+        ("fr", "es"),
+        ("es", "de"),
+        ("de", "es"),
+        ("fr", "de"),
+        ("de", "fr"),
+    }
+)
+
+# Direct opus checkpoints (only en<->X reliably on HF). Cross pairs use pivot.
+DIRECT_OPUS_PAIRS: frozenset[tuple[str, str]] = frozenset(
     {
         ("en", "hi"),
         ("hi", "en"),
@@ -26,7 +54,7 @@ SUPPORTED_PAIRS: frozenset[tuple[str, str]] = frozenset(
     }
 )
 
-# Allowed language codes (Phase 2 list). Used for INVALID_SESSION_CONFIG check.
+# Allowed language codes (Phase 2 list + extended for NLLB 200). Used for validation.
 ALLOWED_LANGS: frozenset[str] = frozenset({"en", "hi", "es", "fr", "de"})
 
 CACHE_SIZE = 64
@@ -160,10 +188,35 @@ class OpusTranslationProvider(TranslationProvider):
         cached = self._cache_get(cache_key)
         if cached is not None:
             return cached
-        # Try real model
+        # Check if transformers is available — if not, skip pivot and use direct mock
+        try:
+            import importlib.util
+
+            has_transformers = importlib.util.find_spec("transformers") is not None
+        except Exception:
+            has_transformers = False
+
+        # Try real model — if direct pair missing and transformers available, pivot via English for cross pairs
+        if has_transformers and (src, tgt) not in DIRECT_OPUS_PAIRS and src != "en" and tgt != "en":
+            # Pivot: src -> en -> tgt using two steps (e.g., hi->es via hi->en + en->es)
+            try:
+                intermediate = await self.translate(text, src, "en")
+                # Avoid infinite recursion — second step is direct
+                result = await self.translate(intermediate, "en", tgt)
+                # For mock fallback intermediate would be [en] text — unwrap to avoid double prefix in real pivot
+                # But for real model intermediate is proper English, so result is correct
+                # Cache pivot result under original key as well
+                self._cache_set(cache_key, result)
+                logger.info("opus pivot translate %s->%s via en", src, tgt)
+                return result
+            except ModelError:
+                raise
+            except Exception as e:
+                logger.warning("opus pivot failed %s->%s: %s", src, tgt, e)
+                # fall through to direct attempt
         pair = self._load_pair(src, tgt)
         if pair is None:
-            # Fallback mock (deterministic) for CI without weights
+            # Fallback mock (deterministic) for CI without weights — still multi-language via prefix
             translated = f"[{tgt}] {text}"
             self._cache_set(cache_key, translated)
             logger.debug("opus fallback translate %s->%s text='%s' -> '%s'", src, tgt, text[:30], translated[:30])

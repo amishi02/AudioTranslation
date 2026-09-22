@@ -9,9 +9,9 @@ from app.providers.interfaces import STTProvider, TranslationProvider
 from app.services.event_normalizer import normalize_transcript, normalize_translation
 from app.services.pipeline.base import TranslationPipeline
 
-# Strategy D (hybrid) params — P8-PIPE-001
-PARTIAL_RATE_LIMIT_MS = 250
-MIN_CHAR_DELTA = 2
+# Strategy D (hybrid) params — P8-PIPE-001 tuned for multi-language visibility
+PARTIAL_RATE_LIMIT_MS = 100
+MIN_CHAR_DELTA = 1
 
 
 class CascadedPipeline(TranslationPipeline):

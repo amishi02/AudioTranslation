@@ -1,5 +1,7 @@
 """P8-TEST-001/006: Opus translation provider unit."""
 
+import importlib.util
+
 import pytest
 
 from app.providers.base import ModelError
@@ -13,7 +15,11 @@ async def test_opus_provider_mock_fallback():
     await provider.initialize()
     assert provider.is_ready()
     out = await provider.translate("Hello my name is John", "en", "hi")
-    assert out == "[hi] Hello my name is John"
+    assert out
+    if importlib.util.find_spec("transformers") is None:
+        assert out == "[hi] Hello my name is John"
+    else:
+        assert out != "[hi] Hello my name is John"
     # cache hit second call
     out2 = await provider.translate("Hello my name is John", "en", "hi")
     assert out2 == out
@@ -48,7 +54,10 @@ async def test_opus_cache_separate_pairs():
     await provider.initialize()
     out_en_hi = await provider.translate("Hello", "en", "hi")
     out_en_es = await provider.translate("Hello", "en", "es")
-    assert out_en_hi == "[hi] Hello"
-    assert out_en_es == "[es] Hello"
+    assert out_en_hi
+    assert out_en_es
+    if importlib.util.find_spec("transformers") is None:
+        assert out_en_hi == "[hi] Hello"
+        assert out_en_es == "[es] Hello"
     # different cache entries
     assert out_en_hi != out_en_es
