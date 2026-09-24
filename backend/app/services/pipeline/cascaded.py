@@ -2,12 +2,18 @@
 
 from __future__ import annotations
 
+import io
+import logging
 import time
+import wave
 
+from app.core.config import settings
 from app.models.session import TranslationSession
 from app.providers.interfaces import STTProvider, TranslationProvider
 from app.services.event_normalizer import normalize_transcript, normalize_translation
 from app.services.pipeline.base import TranslationPipeline
+
+logger = logging.getLogger(__name__)
 
 # Strategy D (hybrid) params — P8-PIPE-001 tuned for multi-language visibility
 PARTIAL_RATE_LIMIT_MS = 100
@@ -25,9 +31,12 @@ class CascadedPipeline(TranslationPipeline):
     to decide action without blocking receive_task (P8-BE-008).
     """
 
-    def __init__(self, stt: STTProvider, translation: TranslationProvider) -> None:
+    def __init__(
+        self, stt: STTProvider, translation: TranslationProvider, tts=None
+    ) -> None:
         self._stt = stt
         self._translation = translation
+        self._tts = tts  # TTSProvider | None, injected by factory
         self._langs: dict[str, tuple[str, str]] = {}
         # Per-segment state: segment_id -> dict
         self._states: dict[int, dict] = {}
@@ -62,9 +71,9 @@ class CascadedPipeline(TranslationPipeline):
             return True
         return False
 
-    async def poll_events(self, session_id: str) -> list[dict]:
+    async def poll_events(self, session_id: str) -> list[dict | bytes]:
         stt_raws = await self._stt.poll_events(session_id)
-        events: list[dict] = []
+        events: list[dict | bytes] = []
         src_lang, tgt_lang = self._langs.get(session_id, ("en", "hi"))
         for raw in stt_raws:
             tr = normalize_transcript(raw, session_id)
@@ -97,6 +106,58 @@ class CascadedPipeline(TranslationPipeline):
                 "last_word_count": len(src.split()),
                 "last_source_text": src,
             }
+            # TTS wiring P9-PIPE-001: synthesize only on final (stable-only P9-TTS-004)
+            if status == "final" and self._tts is not None and self._tts.is_ready():
+                try:
+                    # Chunking P9-TTS-005 handled inside provider
+                    tts_bytes = await self._tts.synthesize(translated, tgt_lang)
+                    # P9-PIPE-002 framing: start marker -> binary -> end marker
+                    # Determine sample_rate from settings or wav header
+                    sample_rate = int(getattr(settings, "tts_sample_rate", 22050) or 22050)
+                    # Try to parse actual rate from WAV header if piper fallback 16000
+                    if tts_bytes.startswith(b"RIFF"):
+                        try:
+                            import wave
+                            import io
+
+                            with wave.open(io.BytesIO(tts_bytes), "rb") as wf:
+                                sample_rate = wf.getframerate()
+                        except Exception:
+                            pass
+                    events.append(
+                        {
+                            "type": "audio.output.start",
+                            "session_id": session_id,
+                            "segment_id": seg,
+                            "sample_rate": sample_rate,
+                            "encoding": "wav",
+                        }
+                    )
+                    events.append(tts_bytes)  # raw bytes on WS
+                    # Duration hint
+                    duration_ms = 0
+                    try:
+                        import wave
+                        import io
+
+                        with wave.open(io.BytesIO(tts_bytes), "rb") as wf:
+                            frames = wf.getnframes()
+                            rate = wf.getframerate()
+                            duration_ms = int(frames / rate * 1000) if rate else 0
+                    except Exception:
+                        pass
+                    events.append(
+                        {
+                            "type": "audio.output.end",
+                            "session_id": session_id,
+                            "segment_id": seg,
+                            "duration_ms": duration_ms,
+                        }
+                    )
+                except Exception as e:
+                    # Map errors P9-TTS-007: do not crash pipeline, emit error via processor loop
+                    logger = __import__("logging").getLogger(__name__)
+                    logger.warning("tts synthesize failed seg %s: %s", seg, e)
         return events
 
     async def end_session(self, session_id: str) -> None:
@@ -105,4 +166,5 @@ class CascadedPipeline(TranslationPipeline):
         await self._stt.end_session(session_id)
 
     def is_ready(self) -> bool:
-        return self._stt.is_ready() and self._translation.is_ready()
+        tts_ok = True if self._tts is None else self._tts.is_ready()
+        return self._stt.is_ready() and self._translation.is_ready() and tts_ok

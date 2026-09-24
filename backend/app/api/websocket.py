@@ -56,7 +56,10 @@ async def _processor_loop(session: TranslationSession, websocket: WebSocket) -> 
                 events = await pipeline.poll_events(session.session_id)  # type: ignore[attr-defined]
                 for ev in events:
                     try:
-                        await websocket.send_json(ev)
+                        if isinstance(ev, (bytes, bytearray)):
+                            await websocket.send_bytes(ev)
+                        else:
+                            await websocket.send_json(ev)
                     except Exception:
                         # WS may be closed
                         return
@@ -143,9 +146,11 @@ async def translate_ws(websocket: WebSocket) -> None:
                         )
                     except ValueError as ve:
                         msg_str = str(ve)
-                        # Extract code prefix if present (P7-BE-007/008)
+                        # Extract code prefix if present (P7-BE-007/008, P9-CFG-001)
                         if "UNSUPPORTED_LANGUAGE" in msg_str:
                             code = "UNSUPPORTED_LANGUAGE"
+                        elif "UNSUPPORTED_PIPELINE" in msg_str:
+                            code = "UNSUPPORTED_PIPELINE"
                         elif "MODEL_NOT_READY" in msg_str:
                             code = "MODEL_NOT_READY"
                         elif "MODEL_ERROR" in msg_str:

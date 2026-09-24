@@ -6,7 +6,7 @@ import { createWebSocketClient } from "../services/websocket.js";
 import { CONNECTION_STATES } from "../utils/constants.js";
 import { getWsUrl } from "../config/environment.js";
 
-export function useWebSocket({ onSessionReady, onSessionEnded, onErrorEvent, onBinary, onTranscript, onTranslation } = {}) {
+export function useWebSocket({ onSessionReady, onSessionEnded, onErrorEvent, onBinary, onTranscript, onTranslation, onAudioStart, onAudioEnd } = {}) {
   const [status, setStatus] = useState(CONNECTION_STATES.IDLE);
   const [sessionId, setSessionId] = useState(null);
   const [error, setError] = useState(null);
@@ -41,6 +41,10 @@ export function useWebSocket({ onSessionReady, onSessionEnded, onErrorEvent, onB
         } else if (event.type === "translation") {
           if (onTranslation) onTranslation(event);
           setStatus(CONNECTION_STATES.LISTENING);
+        } else if (event.type === "audio.output.start") {
+          if (onAudioStart) onAudioStart(event);
+        } else if (event.type === "audio.output.end") {
+          if (onAudioEnd) onAudioEnd(event);
         } else {
           // ignore unknown
         }
@@ -55,7 +59,7 @@ export function useWebSocket({ onSessionReady, onSessionEnded, onErrorEvent, onB
     });
     clientRef.current = client;
     return client;
-  }, [onSessionReady, onSessionEnded, onErrorEvent, onBinary, onTranscript, onTranslation]);
+  }, [onSessionReady, onSessionEnded, onErrorEvent, onBinary, onTranscript, onTranslation, onAudioStart, onAudioEnd]);
 
   const startSession = useCallback(
     ({ sourceLanguage, targetLanguage }) => {

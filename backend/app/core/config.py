@@ -123,6 +123,66 @@ class Settings(BaseSettings):
             raise ValueError(f"TRANSLATION_DEVICE must be one of {sorted(allowed)}, got '{v}'")
         return vv
 
+    @field_validator("pipeline_type", mode="before")
+    @classmethod
+    def _validate_pipeline_type(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        vv = str(v).strip().lower()
+        allowed = {"cascaded", "unified"}
+        if vv not in allowed:
+            raise ValueError(f"PIPELINE_TYPE must be one of {sorted(allowed)}, got '{v}'")
+        return vv
+
+    @field_validator("tts_provider", mode="before")
+    @classmethod
+    def _validate_tts_provider(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        vv = str(v).strip().lower()
+        allowed = {"mock", "piper", "coqui", "xtts", "vits"}
+        if vv not in allowed:
+            raise ValueError(f"TTS_PROVIDER must be one of {sorted(allowed)}, got '{v}'")
+        # normalize xtts/vits -> piper? keep as is for now, but map coqui variants
+        if vv in {"xtts", "vits"}:
+            return "piper"
+        return vv
+
+    @field_validator("unified_provider", mode="before")
+    @classmethod
+    def _validate_unified_provider(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        vv = str(v).strip().lower()
+        allowed = {"mock", "seamless", "seamless-m4t", "seamless_streaming"}
+        if vv not in allowed:
+            raise ValueError(f"UNIFIED_PROVIDER must be one of {sorted(allowed)}, got '{v}'")
+        if vv == "seamless_streaming":
+            return "seamless"
+        return vv
+
+    @field_validator("tts_device", mode="before")
+    @classmethod
+    def _validate_tts_device(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        vv = str(v).strip().lower()
+        allowed = {"cpu", "cuda"}
+        if vv not in allowed:
+            raise ValueError(f"TTS_DEVICE must be one of {sorted(allowed)}, got '{v}'")
+        return vv
+
+    @field_validator("unified_device", mode="before")
+    @classmethod
+    def _validate_unified_device(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        vv = str(v).strip().lower()
+        allowed = {"cpu", "cuda"}
+        if vv not in allowed:
+            raise ValueError(f"UNIFIED_DEVICE must be one of {sorted(allowed)}, got '{v}'")
+        return vv
+
     # --- Paths ---
     ws_v1_path: str = Field(default="/ws/v1/translate")
     api_v1_prefix: str = Field(default="/api/v1")
@@ -136,7 +196,9 @@ class Settings(BaseSettings):
     translation_num_beams: int | None = Field(default=1, ge=1, le=8)
     translation_pair_map: str | None = None
     unified_device: str | None = None
+    unified_target_sample_rate: int | None = Field(default=16000, ge=8000, le=48000)
     tts_device: str | None = None
+    tts_sample_rate: int | None = Field(default=22050, ge=8000, le=48000)
 
     # --- Audio / WS (Phase 4-5) ---
     audio_target_sample_rate: int | None = Field(default=16000)

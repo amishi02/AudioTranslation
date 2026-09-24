@@ -6,6 +6,7 @@ import { useLanguageSelection } from "./hooks/useLanguageSelection.js";
 import { useSessionState } from "./hooks/useSessionState.js";
 import { useWebSocket } from "./hooks/useWebSocket.js";
 import { useAudioRecorder } from "./hooks/useAudioRecorder.js";
+import { useAudioPlayback } from "./hooks/useAudioPlayback.js";
 import { fetchCapabilities, fetchHealth } from "./services/api.js";
 import { CONNECTION_STATES } from "./utils/constants.js";
 import "./App.css";
@@ -27,6 +28,7 @@ function App() {
   const session = useSessionState();
   const [wsError, setWsError] = useState(null);
   const audio = useAudioRecorder();
+  const playback = useAudioPlayback();
 
   const ws = useWebSocket({
     onSessionReady: (event) => {
@@ -37,9 +39,11 @@ function App() {
     onSessionEnded: () => {
       session.setSessionId(null);
       session.setConnection(CONNECTION_STATES.IDLE);
+      playback.handleSessionEnd();
     },
     onErrorEvent: (event) => {
       setWsError(event.message || event.code);
+      if (event.code === "UNSUPPORTED_PIPELINE") playback.handleSessionEnd();
     },
     onTranscript: (event) => {
       session.applyTranscriptEvent(event);
@@ -47,6 +51,9 @@ function App() {
     onTranslation: (event) => {
       session.applyTranslationEvent(event);
     },
+    onAudioStart: (event) => playback.handleStart(event),
+    onAudioEnd: () => playback.handleEnd(),
+    onBinary: (buf) => playback.handleBinary(buf),
   });
 
   // P3-INT-001: fetch health + capabilities on mount
@@ -121,11 +128,12 @@ function App() {
 
   const handleStop = async () => {
     await audio.stopRecording();
+    playback.handleSessionEnd();
     ws.stopSession();
     session.setConnection(CONNECTION_STATES.IDLE);
   };
 
-  // If WS disconnects mid-speech, stop mic
+  // If WS disconnects mid-speech, stop mic and playback
   useEffect(() => {
     if (
       ws.status === CONNECTION_STATES.DISCONNECTED ||
@@ -135,6 +143,7 @@ function App() {
       if (audio.micStatus === "active") {
         audio.stopRecording();
       }
+      playback.handleSessionEnd();
     }
   }, [ws.status, audio.micStatus]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -186,17 +195,20 @@ function App() {
         bannerMessage={bannerMessage}
         onRetry={handleRetryHealth}
         onDismiss={handleDismissBanner}
-      transcriptSegments={transcriptSegments}
-      transcriptActive={session.activeSegment}
-      translationSegments={translationSegments}
-      translationActive={session.translationActive}
-      canStart={effectiveCanStart}
-      validationError={validationError}
-      backendHealthy={backendHealthy}
-      onStart={handleStart}
-      onStop={handleStop}
-      isActive={isActive}
-      micStatus={audio.micStatus}
+        transcriptSegments={transcriptSegments}
+        transcriptActive={session.activeSegment}
+        translationSegments={translationSegments}
+        translationActive={session.translationActive}
+        canStart={effectiveCanStart}
+        validationError={validationError}
+        backendHealthy={backendHealthy}
+        onStart={handleStart}
+        onStop={handleStop}
+        isActive={isActive}
+        micStatus={audio.micStatus}
+        playbackStatus={playback.status}
+        playbackMuted={playback.muted}
+        onToggleMute={playback.toggleMute}
       />
     </>
   );

@@ -20,14 +20,34 @@ class UnifiedPipeline(TranslationPipeline):
     async def push_audio(self, session_id: str, pcm: bytes) -> None:
         await self._unified.push_audio(session_id, pcm)
 
-    async def poll_events(self, session_id: str) -> list[dict]:
+    async def poll_events(self, session_id: str) -> list[dict | bytes]:
         raws = await self._unified.poll_events(session_id)
-        events: list[dict] = []
+        events: list[dict | bytes] = []
         for raw in raws:
             tr, tl = normalize_unified(raw, session_id)
             events.append(tr.model_dump())
             events.append(tl.model_dump())
-            # Optional audio output would be here in Phase 9
+            # Optional audio output for S2S variant P9-PIPE-005
+            audio_bytes = raw.get("audio_bytes")
+            if audio_bytes:
+                # Expect bytes; emit bracketed markers
+                events.append(
+                    {
+                        "type": "audio.output.start",
+                        "session_id": session_id,
+                        "segment_id": tr.segment_id,
+                        "sample_rate": raw.get("sample_rate", 16000),
+                        "encoding": raw.get("encoding", "wav"),
+                    }
+                )
+                events.append(audio_bytes)  # raw bytes
+                events.append(
+                    {
+                        "type": "audio.output.end",
+                        "session_id": session_id,
+                        "segment_id": tr.segment_id,
+                    }
+                )
         return events
 
     async def end_session(self, session_id: str) -> None:

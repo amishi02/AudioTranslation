@@ -32,6 +32,9 @@ export default function AppShell({
   onStop,
   isActive = false,
   micStatus = "idle",
+  playbackStatus = "idle",
+  playbackMuted = false,
+  onToggleMute,
 }) {
   const startDisabled = !canStart || !backendHealthy;
   let startReason = "";
@@ -78,6 +81,20 @@ export default function AppShell({
               Stop Translation
             </button>
           )}
+        </div>
+        <div className="playback-controls" data-testid="playback-controls">
+          <span className="playback-status" data-testid="playback-status" data-status={playbackStatus}>
+            {playbackStatus === "playing" ? "🔊 Playing translation" : playbackMuted ? "🔇 Muted" : "🔈 Ready"}
+          </span>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            data-testid="mute-toggle"
+            onClick={onToggleMute}
+            aria-label={playbackMuted ? "Unmute" : "Mute"}
+          >
+            {playbackMuted ? "Unmute" : "Mute"}
+          </button>
         </div>
         {startReason && !isActive && (
           <p className="start-reason" data-testid="start-reason">

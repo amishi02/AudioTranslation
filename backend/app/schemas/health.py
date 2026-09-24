@@ -11,7 +11,7 @@ class HealthResponse(BaseModel):
 
 
 class ReadyResponse(BaseModel):
-    """Readiness response — Phase 7-8 includes STT/translation readiness."""
+    """Readiness response — Phase 9 includes TTS/unified readiness."""
 
     status: str = "ready"
     model_ready: bool
@@ -23,3 +23,9 @@ class ReadyResponse(BaseModel):
     translation_ready: bool | None = None
     translation_model: str | None = None
     translation_provider: str | None = None
+    tts_ready: bool | None = None
+    tts_model: str | None = None
+    tts_provider: str | None = None
+    unified_ready: bool | None = None
+    unified_model: str | None = None
+    unified_provider: str | None = None

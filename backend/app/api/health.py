@@ -16,8 +16,8 @@ async def health_check() -> HealthResponse:
 
 @router.get("/health/ready", response_model=ReadyResponse, tags=["health"])
 async def readiness_check() -> ReadyResponse:
-    """Readiness — Phase 8: reflect STT + translation provider readiness (P7-CFG-002, P8-CFG-002)."""
-    pipeline = settings.pipeline_type or "cascaded"
+    """Readiness — Phase 9: reflect STT + translation + TTS/unified readiness."""
+    pipeline = (settings.pipeline_type or "cascaded").lower()
     stt_provider = (settings.stt_provider or "mock").lower()
     if stt_provider == "mock":
         stt_ready = True
@@ -57,11 +57,44 @@ async def readiness_check() -> ReadyResponse:
                 translation_ready = False
         except Exception:
             translation_ready = False
-    # If either provider not ready, model_ready should reflect overall? Keep stt model_ready for compat
-    # but ensure translation_ready influences overall if needed (not breaking existing test)
+    # TTS readiness P9-BE-002
+    tts_provider = (settings.tts_provider or "mock").lower()
+    if tts_provider == "mock":
+        tts_ready = True
+    else:
+        try:
+            if tts_provider in ("piper", "coqui", "xtts", "vits"):
+                from app.providers.tts.piper import get_piper_singleton
+
+                tts_ready = get_piper_singleton().is_ready()
+            else:
+                tts_ready = False
+        except Exception:
+            tts_ready = False
+    # Unified readiness P9
+    unified_provider = (settings.unified_provider or "mock").lower()
+    if unified_provider == "mock":
+        unified_ready = True
+    else:
+        try:
+            if unified_provider in ("seamless", "seamless-m4t"):
+                from app.providers.speech_translation.seamless import get_seamless_singleton
+
+                unified_ready = get_seamless_singleton().is_ready()
+            else:
+                unified_ready = False
+        except Exception:
+            unified_ready = False
+    # Overall model_ready per pipeline
+    if pipeline == "unified":
+        overall_ready = unified_ready
+    else:
+        overall_ready = stt_ready and translation_ready and tts_ready
+    # Keep model_ready for compat but also reflect overall if stricter
+    model_ready = model_ready and overall_ready if "model_ready" in locals() else overall_ready
     return ReadyResponse(
         status="ready",
-        model_ready=model_ready,
+        model_ready=overall_ready,
         pipeline=pipeline,
         version=settings.app_version,
         stt_ready=stt_ready,
@@ -70,4 +103,10 @@ async def readiness_check() -> ReadyResponse:
         translation_ready=translation_ready,
         translation_model=settings.translation_model or "Helsinki-NLP/opus-mt-en-hi",
         translation_provider=trans_provider,
+        tts_ready=tts_ready,
+        tts_model=settings.tts_model or "piper:en_US-lessac-medium",
+        tts_provider=tts_provider,
+        unified_ready=unified_ready,
+        unified_model=settings.unified_model or "facebook/seamless-streaming",
+        unified_provider=unified_provider,
     )
