@@ -231,11 +231,45 @@
   box-sizing: border-box;
 }
 
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 8px;
+  flex-shrink: 0;
+}
+
+.panel-title {
+  margin: 0;
+  font-size: 1rem;
+  color: #111827;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  flex: 1;
+  text-align: left;
+}
+
+@media (prefers-color-scheme: dark) {
+  .panel-title {
+    color: #111827;
+  }
+}
+
 .panel h2 {
   margin: 0 0 8px;
   font-size: 1rem;
-  color: var(--text-h);
+  color: #111827;
+  font-weight: 700;
+  letter-spacing: -0.01em;
   flex-shrink: 0;
+}
+
+@media (prefers-color-scheme: dark) {
+  .panel h2 {
+    color: #111827;
+  }
 }
 
 .placeholder {
@@ -487,6 +521,15 @@
   }
 }
 
+.transcript-wrapper,
+.translation-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .transcript,
 .translation {
   flex: 1;
@@ -504,6 +547,72 @@
   word-wrap: break-word;
   overflow-wrap: break-word;
   word-break: break-word;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border, #d1d5db) transparent;
+}
+
+.transcript::-webkit-scrollbar,
+.translation::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.transcript::-webkit-scrollbar-track,
+.translation::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.transcript::-webkit-scrollbar-thumb,
+.translation::-webkit-scrollbar-thumb {
+  background: var(--border, #d1d5db);
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background-clip: content-box;
+}
+
+.transcript::-webkit-scrollbar-thumb:hover,
+.translation::-webkit-scrollbar-thumb:hover {
+  background: var(--accent, #646cff);
+  border-radius: 6px;
+}
+
+.copy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 6px;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 6px;
+  background: var(--social-bg, #f9fafb);
+  color: #111827;
+  cursor: pointer;
+  font-size: 12px;
+  flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.copy-btn:hover:not(:disabled) {
+  background: var(--accent-bg, #eef2ff);
+  border-color: var(--accent, #646cff);
+  color: var(--accent, #646cff);
+}
+
+.copy-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.copy-btn:focus-visible {
+  outline: 2px solid var(--accent, #646cff);
+  outline-offset: 2px;
+}
+
+.copy-label {
+  font-size: 11px;
+  font-weight: 600;
 }
 
 .segment {

@@ -87,12 +87,10 @@ export default function AppShell({
       </section>
 
       <section className="panels" aria-label="Translation panels">
-        <div className="panel" aria-labelledby="transcript-heading">
-          <h2 id="transcript-heading">Source Transcript</h2>
+        <div className="panel">
           <Transcript segments={transcriptSegments} activeSegment={transcriptActive} />
         </div>
-        <div className="panel" aria-labelledby="translation-heading">
-          <h2 id="translation-heading">Translation</h2>
+        <div className="panel">
           <Translation segments={translationSegments} activeSegment={translationActive} />
         </div>
       </section>
