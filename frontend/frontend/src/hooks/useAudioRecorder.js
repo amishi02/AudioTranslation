@@ -140,7 +140,7 @@ export function useAudioRecorder() {
         const float32 = event.data;
         if (!(float32 instanceof Float32Array)) return;
 
-        const blocked = !["ready", "listening"].includes(wsStatusRef?.current);
+        const blocked = ["idle", "error", "disconnected"].includes(wsStatusRef?.current);
         if (blocked) {
           console.debug("[audio] dropped_chunk_backpressure ws=", wsStatusRef?.current);
           return;

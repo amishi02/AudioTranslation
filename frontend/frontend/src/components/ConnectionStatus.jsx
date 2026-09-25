@@ -21,8 +21,8 @@ const STATUS_CLASS = {
   [CONNECTION_STATES.DISCONNECTED]: "status-disconnected",
 };
 
-export default function ConnectionStatus({ status, error, micStatus }) {
-  const text = STATUS_TEXT[status] || status;
+export default function ConnectionStatus({ status, error, micStatus, modelLoading = false }) {
+  const text = modelLoading ? "Preparing language models..." : STATUS_TEXT[status] || status;
   const cls = STATUS_CLASS[status] || "status-idle";
   return (
     <div

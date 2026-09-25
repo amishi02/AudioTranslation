@@ -61,6 +61,12 @@ class Settings(BaseSettings):
     stt_model: str | None = None
     stt_device: str | None = None
     stt_compute_type: str | None = None
+    stt_min_decode_seconds: float = Field(default=1.0, ge=0.25, le=10.0)
+    stt_vad_filter: bool = True
+    stt_vad_min_speech_ms: int = Field(default=250, ge=50, le=2000)
+    stt_vad_min_silence_ms: int = Field(default=500, ge=100, le=3000)
+    stt_vad_speech_pad_ms: int = Field(default=100, ge=0, le=1000)
+    stt_no_speech_threshold: float = Field(default=0.6, ge=0.0, le=1.0)
     translation_model: str | None = None
     unified_model: str | None = None
     tts_model: str | None = None

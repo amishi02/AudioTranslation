@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-import io
 import logging
 import time
-import wave
 
 from app.core.config import settings
 from app.models.session import TranslationSession
@@ -47,6 +45,9 @@ class CascadedPipeline(TranslationPipeline):
             session.target_language,
         )
         await self._stt.start_session(session.session_id, session.source_language)
+        prepare_pair = getattr(self._translation, "prepare_pair", None)
+        if prepare_pair is not None:
+            await prepare_pair(session.source_language, session.target_language)
 
     async def push_audio(self, session_id: str, pcm: bytes) -> None:
         await self._stt.push_audio(session_id, pcm)
@@ -117,8 +118,8 @@ class CascadedPipeline(TranslationPipeline):
                     # Try to parse actual rate from WAV header if piper fallback 16000
                     if tts_bytes.startswith(b"RIFF"):
                         try:
-                            import wave
                             import io
+                            import wave
 
                             with wave.open(io.BytesIO(tts_bytes), "rb") as wf:
                                 sample_rate = wf.getframerate()
@@ -137,8 +138,8 @@ class CascadedPipeline(TranslationPipeline):
                     # Duration hint
                     duration_ms = 0
                     try:
-                        import wave
                         import io
+                        import wave
 
                         with wave.open(io.BytesIO(tts_bytes), "rb") as wf:
                             frames = wf.getnframes()

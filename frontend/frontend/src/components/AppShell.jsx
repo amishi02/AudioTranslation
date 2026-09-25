@@ -15,6 +15,7 @@ export default function AppShell({
   onTargetChange,
   supportedLanguages = [],
   connectionStatus = "idle",
+  modelLoading = false,
   connectionError = null,
   bannerMessage = null,
   onRetry,
@@ -59,7 +60,7 @@ export default function AppShell({
           onTargetChange={onTargetChange}
           supportedLanguages={supportedLanguages}
         />
-        <ConnectionStatus status={connectionStatus} error={connectionError} micStatus={micStatus} />
+        <ConnectionStatus status={connectionStatus} error={connectionError} micStatus={micStatus} modelLoading={modelLoading} />
         <div className="controls-row">
           {!isActive ? (
             <button

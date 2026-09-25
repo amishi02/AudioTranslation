@@ -27,21 +27,34 @@ function App() {
 
   const session = useSessionState();
   const [wsError, setWsError] = useState(null);
+  const [modelLoading, setModelLoading] = useState(false);
   const audio = useAudioRecorder();
   const playback = useAudioPlayback();
+  const sessionReadyRef = useRef(false);
+  const pendingAudioRef = useRef([]);
 
   const ws = useWebSocket({
     onSessionReady: (event) => {
+      setModelLoading(false);
+      sessionReadyRef.current = true;
+      for (const buffer of pendingAudioRef.current) ws.sendAudio(buffer);
+      pendingAudioRef.current = [];
       session.setSessionId(event.session_id);
       session.setConnection(CONNECTION_STATES.LISTENING);
       setWsError(null);
     },
     onSessionEnded: () => {
+      setModelLoading(false);
+      sessionReadyRef.current = false;
+      pendingAudioRef.current = [];
       session.setSessionId(null);
       session.setConnection(CONNECTION_STATES.IDLE);
       playback.handleSessionEnd();
     },
     onErrorEvent: (event) => {
+      setModelLoading(false);
+      sessionReadyRef.current = false;
+      pendingAudioRef.current = [];
       setWsError(event.message || event.code);
       if (event.code === "UNSUPPORTED_PIPELINE") playback.handleSessionEnd();
     },
@@ -109,11 +122,18 @@ function App() {
     audio.clearError();
     // Clear old session content — new session should start fresh (fixed length, latest at bottom)
     session.reset();
+    setModelLoading(true);
+    sessionReadyRef.current = false;
+    pendingAudioRef.current = [];
     session.setConnection(CONNECTION_STATES.CONNECTING);
     ws.startSession({ sourceLanguage, targetLanguage });
     const ok = await audio.startRecording(
       (buffer) => {
-        ws.sendAudio(buffer);
+        if (sessionReadyRef.current) {
+          ws.sendAudio(buffer);
+        } else if (pendingAudioRef.current.length < 32) {
+          pendingAudioRef.current.push(buffer);
+        }
       },
       { wsStatusRef }
     );
@@ -128,6 +148,9 @@ function App() {
 
   const handleStop = async () => {
     await audio.stopRecording();
+    setModelLoading(false);
+    sessionReadyRef.current = false;
+    pendingAudioRef.current = [];
     playback.handleSessionEnd();
     ws.stopSession();
     session.setConnection(CONNECTION_STATES.IDLE);
@@ -191,6 +214,7 @@ function App() {
         onTargetChange={setTarget}
         supportedLanguages={supportedLanguages}
         connectionStatus={connectionStatus}
+        modelLoading={modelLoading}
         connectionError={wsError || healthError || audio.error}
         bannerMessage={bannerMessage}
         onRetry={handleRetryHealth}

@@ -93,6 +93,28 @@ class OpusTranslationProvider(TranslationProvider):
         self._cache.clear()
         self._ready = False
 
+    async def prepare_pair(self, source_lang: str, target_lang: str) -> None:
+        """Validate and load the selected pair before a session becomes ready."""
+        if not self.is_ready():
+            raise ModelNotReady("Translation model not ready")
+        src = source_lang.strip().lower()
+        tgt = target_lang.strip().lower()
+        if (src, tgt) not in SUPPORTED_PAIRS:
+            raise ModelError(
+                f"Unsupported pair {src}->{tgt}", code="UNSUPPORTED_LANGUAGE"
+            )
+        pairs_to_load = (
+            [(src, tgt)]
+            if (src, tgt) in DIRECT_OPUS_PAIRS
+            else [(src, "en"), ("en", tgt)]
+        )
+        for pair_src, pair_tgt in pairs_to_load:
+            pair = await asyncio.to_thread(self._load_pair, pair_src, pair_tgt)
+            if pair is None:
+                raise ModelNotReady(
+                    f"Translation model unavailable for {pair_src}->{pair_tgt}"
+                )
+
     def _get_model_name(self, src: str, tgt: str) -> str:
         tmpl = settings.translation_model or "Helsinki-NLP/opus-mt-{src}-{tgt}"
         # If template contains {src} placeholder, format it

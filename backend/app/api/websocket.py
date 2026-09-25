@@ -33,48 +33,61 @@ async def _send_error(websocket: WebSocket, code: str, message: str) -> None:
 
 async def _processor_loop(session: TranslationSession, websocket: WebSocket) -> None:
     """Phase 6: audio_queue -> pipeline -> normalized events -> WS."""
+    audio_task: asyncio.Task[bytes] | None = None
+    inference_task: asyncio.Task[list[dict | bytes]] | None = None
+    audio_since_inference = False
     try:
+        audio_task = asyncio.create_task(session.audio_queue.get())
         while True:
-            pcm: bytes = await session.audio_queue.get()
             pipeline = session.pipeline
             if pipeline is None:
+                await asyncio.sleep(0)
                 continue
-            try:
-                # Whisper inference is much slower than 60 ms audio chunks on
-                # CPU. Drain queued chunks before polling so one inference
-                # processes the accumulated audio instead of falling behind.
-                queued = [pcm]
-                while True:
-                    try:
-                        queued.append(session.audio_queue.get_nowait())
-                    except asyncio.QueueEmpty:
-                        break
-                for queued_pcm in queued:
-                    await pipeline.push_audio(  # type: ignore[attr-defined]
-                        session.session_id, queued_pcm
+
+            wait_tasks: set[asyncio.Task[object]] = {audio_task}
+            if inference_task is not None:
+                wait_tasks.add(inference_task)
+            done, _ = await asyncio.wait(
+                wait_tasks, return_when=asyncio.FIRST_COMPLETED
+            )
+
+            if audio_task in done:
+                pcm = audio_task.result()
+                audio_task = asyncio.create_task(session.audio_queue.get())
+                await pipeline.push_audio(session.session_id, pcm)  # type: ignore[attr-defined]
+                audio_since_inference = True
+                if inference_task is None:
+                    inference_task = asyncio.create_task(
+                        pipeline.poll_events(session.session_id)  # type: ignore[attr-defined]
                     )
-                events = await pipeline.poll_events(session.session_id)  # type: ignore[attr-defined]
+
+            if inference_task is not None and inference_task in done:
+                events = inference_task.result()
+                inference_task = None
                 for ev in events:
-                    try:
-                        if isinstance(ev, (bytes, bytearray)):
-                            await websocket.send_bytes(ev)
-                        else:
-                            await websocket.send_json(ev)
-                    except Exception:
-                        # WS may be closed
-                        return
-            except Exception as exc:
-                # Map model errors to error event
-                code = getattr(exc, "code", "MODEL_ERROR")
-                msg = str(exc)
-                try:
-                    await websocket.send_json(
-                        {"type": "error", "code": code, "message": msg}
+                    if isinstance(ev, (bytes, bytearray)):
+                        await websocket.send_bytes(ev)
+                    else:
+                        await websocket.send_json(ev)
+                if audio_since_inference:
+                    audio_since_inference = False
+                    inference_task = asyncio.create_task(
+                        pipeline.poll_events(session.session_id)  # type: ignore[attr-defined]
                     )
-                except Exception:
-                    return
     except asyncio.CancelledError:
+        if audio_task is not None:
+            audio_task.cancel()
+        if inference_task is not None:
+            inference_task.cancel()
         return
+    except Exception as exc:
+        code = getattr(exc, "code", "MODEL_ERROR")
+        try:
+            await websocket.send_json(
+                {"type": "error", "code": code, "message": str(exc)}
+            )
+        except Exception:
+            return
 
 
 @router.websocket(settings.ws_v1_path)

@@ -15,7 +15,8 @@ logger = logging.getLogger(__name__)
 # Segment boundary policy (P7-PIPE-003) — documented
 WINDOWED_FINAL_EVERY_S = 2.5
 SILENCE_THRESHOLD_MS = 700
-PARTIAL_THROTTLE_MS = 200
+PARTIAL_THROTTLE_MS = 300
+LIVE_WINDOW_S = 1.5
 
 # Whisper-supported ISO 639-1 codes (99 languages, per OpenAI Whisper).
 # Used for P7-BE-007 language validation.
@@ -211,6 +212,7 @@ class WhisperSTTProvider(STTProvider):
             "last_text": "",
             "count": 0,
             "last_partial_at": 0.0,
+            "last_inference_at": 0.0,
             "last_final_at": time.time(),
             "source_language": lang,
         }
@@ -246,11 +248,14 @@ class WhisperSTTProvider(STTProvider):
 
         # Real mode: windowed decoding — tuned for real-time (shorter window for faster partials)
         buf: bytearray = st["audio_buffer"]
-        min_bytes = 8000  # 0.25s @16k S16LE — faster first partial for real-time use case
+        # Decoding a few hundred milliseconds of speech usually returns no
+        # usable text, but still consumes a full CPU inference cycle. Buffer a
+        # configurable minimum so the first decode can produce a result.
+        min_bytes = int(settings.stt_min_decode_seconds * 16000 * 2)
         if len(buf) < min_bytes:
             return []
         # Throttle
-        if (now - st["last_partial_at"]) * 1000 < PARTIAL_THROTTLE_MS:
+        if (now - st["last_inference_at"]) * 1000 < PARTIAL_THROTTLE_MS:
             return []
 
         # Check if we should emit final (silence or windowed time)
@@ -258,8 +263,8 @@ class WhisperSTTProvider(STTProvider):
         if (now - st["last_final_at"]) >= WINDOWED_FINAL_EVERY_S:
             should_final = True
 
-        # Decode last ~2.5s window for better context
-        window_bytes = bytes(buf[-int(2.5 * 16000 * 2) :])  # last 2.5s
+        # Keep the live decode window short enough for CPU inference to keep up.
+        window_bytes = bytes(buf[-int(LIVE_WINDOW_S * 16000 * 2) :])
         try:
             # Convert to float32 for faster-whisper
             float32 = _pcm_bytes_to_float32(window_bytes)
@@ -272,12 +277,24 @@ class WhisperSTTProvider(STTProvider):
             # faster-whisper transcribe
             def _transcribe() -> str:
                 segments, _ = self._model.transcribe(
-                    audio_np, language=lang, beam_size=1, without_timestamps=True
+                    audio_np,
+                    language=lang,
+                    beam_size=3,
+                    without_timestamps=True,
+                    condition_on_previous_text=False,
+                    no_speech_threshold=settings.stt_no_speech_threshold,
+                    vad_filter=settings.stt_vad_filter,
+                    vad_parameters={
+                        "min_speech_duration_ms": settings.stt_vad_min_speech_ms,
+                        "min_silence_duration_ms": settings.stt_vad_min_silence_ms,
+                        "speech_pad_ms": settings.stt_vad_speech_pad_ms,
+                    },
                 )  # type: ignore[union-attr]
                 texts = [s.text.strip() for s in segments]
                 return " ".join(texts).strip() if texts else ""
 
             text: str = await asyncio.to_thread(_transcribe)
+            st["last_inference_at"] = time.time()
             logger.info(
                 "stt transcribe real session_id=%s in_bytes=%s window_bytes=%s out_text='%s' final=%s",
                 session_id[:8],
@@ -287,6 +304,11 @@ class WhisperSTTProvider(STTProvider):
                 should_final,
             )
             if not text:
+                return []
+            # Do not finalize an unchanged hypothesis. Waiting for new speech
+            # keeps the same segment alive instead of repeating it as a new one.
+            if should_final and text == st["last_text"]:
+                st["last_final_at"] = now
                 return []
             # Suppress duplicate partials
             if text == st["last_text"] and not should_final:
@@ -315,9 +337,10 @@ class WhisperSTTProvider(STTProvider):
             if is_final:
                 st["segment_id"] = seg + 1
                 st["last_final_at"] = now
-                # Keep last 0.5s for continuity, drop older
-                keep = int(0.5 * 16000 * 2)
-                st["audio_buffer"] = bytearray(buf[-keep:])
+                # Start the next segment with fresh audio; retaining the old
+                # tail makes Whisper repeat the previous sentence.
+                st["audio_buffer"] = bytearray()
+                st["last_text"] = ""
             else:
                 st["last_partial_at"] = now
             return [event]
@@ -331,29 +354,9 @@ class WhisperSTTProvider(STTProvider):
         st = self._sessions.get(session_id)
         if st is None:
             return
-        # Flush remaining buffer as final if non-empty and not yet finalized
-        buf = st["audio_buffer"]
-        if len(buf) > 0 and self._model is not None:
-            # Try to produce final from remaining buffer
-            try:
-                float32 = _pcm_bytes_to_float32(bytes(buf))
-                import numpy as np
-
-                audio_np = np.array(float32, dtype=np.float32)
-                lang = st["source_language"]
-
-                def _transcribe_final() -> str:
-                    segments, _ = self._model.transcribe(
-                        audio_np, language=lang, beam_size=1
-                    )  # type: ignore[union-attr]
-                    return " ".join(s.text.strip() for s in segments).strip()
-
-                text = await asyncio.to_thread(_transcribe_final)
-                if text:
-                    # This final will be picked up by poll? For end, we don't push via poll, just clean
-                    pass
-            except Exception:
-                pass
+        # Teardown cannot deliver a final event, so decoding the entire buffer
+        # here only delays session.ended. On CPU that made the next start race
+        # the old session and fail with SESSION_ERROR.
         self._sessions.pop(session_id, None)
 
 

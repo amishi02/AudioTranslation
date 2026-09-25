@@ -46,6 +46,14 @@ class SessionReadyEvent(BaseModel):
     target_language: str
 
 
+class SessionInitializingEvent(BaseModel):
+    """Server -> client: models are loading for the selected language pair."""
+
+    type: Literal["session.initializing"] = "session.initializing"
+    source_language: str
+    target_language: str
+
+
 class SessionEndedEvent(BaseModel):
     """Server -> client: session.ended."""
 
