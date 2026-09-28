@@ -28,8 +28,8 @@ Phase 1 **complete (10/10 phases, 100%)** — dual pipelines (cascaded `STT→Tr
 
 ```bash
 # 1. Clone
-git clone https://github.com/<org>/real-time-audio-translation.git
-cd real-time-audio-translation
+git clone https://github.com/amishi02/AudioTranslation.git
+cd AudioTranslation
 
 # 2. Backend — venv + dependencies
 cd backend
