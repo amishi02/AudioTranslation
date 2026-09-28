@@ -145,7 +145,9 @@ class OpusTranslationProvider(TranslationProvider):
                 AutoTokenizer,
             )
         except ImportError:
-            logger.warning("transformers not installed — opus fallback mock for %s->%s", src, tgt)
+            logger.warning(
+                "transformers not installed — opus fallback mock for %s->%s", src, tgt
+            )
             return None
         model_name = self._get_model_name(src, tgt)
         device = (settings.translation_device or "cpu").lower()
@@ -192,18 +194,30 @@ class OpusTranslationProvider(TranslationProvider):
         tgt = target_lang.strip().lower()
         # Validation P8-BE-005
         if not src or not tgt:
-            raise ModelError("source and target required", code="INVALID_SESSION_CONFIG")
+            raise ModelError(
+                "source and target required", code="INVALID_SESSION_CONFIG"
+            )
         if src == tgt:
-            raise ModelError(f"Unsupported pair {src}->{tgt} (same language)", code="UNSUPPORTED_LANGUAGE")
+            raise ModelError(
+                f"Unsupported pair {src}->{tgt} (same language)",
+                code="UNSUPPORTED_LANGUAGE",
+            )
         # Check allowed langs first
         if src not in ALLOWED_LANGS or tgt not in ALLOWED_LANGS:
             # If language code itself invalid
             if src not in ALLOWED_LANGS and tgt not in ALLOWED_LANGS:
-                raise ModelError(f"Invalid language codes {src}->{tgt}", code="INVALID_SESSION_CONFIG")
+                raise ModelError(
+                    f"Invalid language codes {src}->{tgt}",
+                    code="INVALID_SESSION_CONFIG",
+                )
             # Otherwise pair unsupported
-            raise ModelError(f"Unsupported pair {src}->{tgt}", code="UNSUPPORTED_LANGUAGE")
+            raise ModelError(
+                f"Unsupported pair {src}->{tgt}", code="UNSUPPORTED_LANGUAGE"
+            )
         if (src, tgt) not in SUPPORTED_PAIRS:
-            raise ModelError(f"Unsupported pair {src}->{tgt}", code="UNSUPPORTED_LANGUAGE")
+            raise ModelError(
+                f"Unsupported pair {src}->{tgt}", code="UNSUPPORTED_LANGUAGE"
+            )
         if not text or not text.strip():
             return ""
         cache_key = (src, tgt, text)
@@ -219,7 +233,12 @@ class OpusTranslationProvider(TranslationProvider):
             has_transformers = False
 
         # Try real model — if direct pair missing and transformers available, pivot via English for cross pairs
-        if has_transformers and (src, tgt) not in DIRECT_OPUS_PAIRS and src != "en" and tgt != "en":
+        if (
+            has_transformers
+            and (src, tgt) not in DIRECT_OPUS_PAIRS
+            and src != "en"
+            and tgt != "en"
+        ):
             # Pivot: src -> en -> tgt using two steps (e.g., hi->es via hi->en + en->es)
             try:
                 intermediate = await self.translate(text, src, "en")
@@ -241,15 +260,28 @@ class OpusTranslationProvider(TranslationProvider):
             # Fallback mock (deterministic) for CI without weights — still multi-language via prefix
             translated = f"[{tgt}] {text}"
             self._cache_set(cache_key, translated)
-            logger.debug("opus fallback translate %s->%s text='%s' -> '%s'", src, tgt, text[:30], translated[:30])
+            logger.debug(
+                "opus fallback translate %s->%s text='%s' -> '%s'",
+                src,
+                tgt,
+                text[:30],
+                translated[:30],
+            )
             return translated
         tokenizer, model = pair  # type: ignore[misc]
         max_len = int(getattr(settings, "translation_max_length", 128) or 128)
         num_beams = int(getattr(settings, "translation_num_beams", 1) or 1)
+
         # Blocking generate -> thread
         def _gen() -> str:
             try:
-                inputs = tokenizer(text, return_tensors="pt", padding=True, truncation=True, max_length=max_len)  # type: ignore[union-attr]
+                inputs = tokenizer(
+                    text,
+                    return_tensors="pt",
+                    padding=True,
+                    truncation=True,
+                    max_length=max_len,
+                )  # type: ignore[union-attr]
                 # Move to device if model on cuda
                 try:
                     device = next(model.parameters()).device.type  # type: ignore[union-attr]
@@ -270,9 +302,15 @@ class OpusTranslationProvider(TranslationProvider):
         except Exception as exc:
             logger.exception("opus inference failed %s->%s: %s", src, tgt, exc)
             raise InferenceError(str(exc)) from exc
-        translated = translated.strip() if isinstance(translated, str) else str(translated).strip()
+        translated = (
+            translated.strip()
+            if isinstance(translated, str)
+            else str(translated).strip()
+        )
         self._cache_set(cache_key, translated)
-        logger.info("opus translate %s->%s chars %s -> %s", src, tgt, len(text), len(translated))
+        logger.info(
+            "opus translate %s->%s chars %s -> %s", src, tgt, len(text), len(translated)
+        )
         return translated
 
 

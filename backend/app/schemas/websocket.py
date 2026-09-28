@@ -29,12 +29,15 @@ class SessionStop(BaseModel):
 
 
 class ErrorEvent(BaseModel):
-    """Server -> client: error."""
+    """Server -> client: error — P10-ERR-002 envelope."""
 
     type: Literal["error"] = "error"
     code: str
     message: str
     details: dict[str, object] | None = None
+    retryable: bool = False
+    session_id: str | None = None
+    timestamp: float | None = None
 
 
 class SessionReadyEvent(BaseModel):

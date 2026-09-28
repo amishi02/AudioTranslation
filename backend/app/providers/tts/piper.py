@@ -94,7 +94,10 @@ class PiperTTSProvider(TTSProvider):
         try:
             import importlib.util
 
-            has_piper = importlib.util.find_spec("piper") is not None or importlib.util.find_spec("piper_tts") is not None
+            has_piper = (
+                importlib.util.find_spec("piper") is not None
+                or importlib.util.find_spec("piper_tts") is not None
+            )
             if has_piper:
                 logger.info("piper tts provider found, lazy per-voice load")
             else:
@@ -182,7 +185,9 @@ class PiperTTSProvider(TTSProvider):
                         v = PiperVoice.load(voice)  # type: ignore[union-attr]
                         self._voices[voice] = v
                     except Exception as e:
-                        raise InferenceError(f"Failed to load piper voice {voice}: {e}") from e
+                        raise InferenceError(
+                            f"Failed to load piper voice {voice}: {e}"
+                        ) from e
                 v = self._voices[voice]
                 # Synthesize chunks and concat PCM then wrap WAV
                 # Piper API: v.synthesize(text) yields audio chunks
@@ -206,7 +211,9 @@ class PiperTTSProvider(TTSProvider):
                                 all_pcm.extend(c)
                     except Exception:
                         # Fallback: use fallback wav for this chunk
-                        all_pcm.extend(_fallback_wav(chunk, lang, sample_rate=sr)[44:])  # skip header
+                        all_pcm.extend(
+                            _fallback_wav(chunk, lang, sample_rate=sr)[44:]
+                        )  # skip header
                         sr = 16000
                 # Wrap as WAV
                 buf = _io.BytesIO()

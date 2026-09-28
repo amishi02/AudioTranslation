@@ -11,13 +11,19 @@ export function useWebSocket({ onSessionReady, onSessionEnded, onErrorEvent, onB
   const [sessionId, setSessionId] = useState(null);
   const [error, setError] = useState(null);
   const clientRef = useRef(null);
+  const reconnectRef = useRef({ attempts: 0, timer: null });
 
   const ensureClient = useCallback(() => {
     if (clientRef.current) return clientRef.current;
     const wsUrl = getWsUrl();
     const client = createWebSocketClient(wsUrl, {
       onEvent: (event) => {
+        // T5 capture: frontend decode done for perf (P10-PERF-001) — log when perf field present
+        if (event.perf) {
+          console.debug("[perf] event", event.type, event.perf);
+        }
         if (event.type === "session.ready") {
+          reconnectRef.current.attempts = 0;
           setSessionId(event.session_id);
           setStatus(CONNECTION_STATES.READY);
           if (onSessionReady) onSessionReady(event);
@@ -28,23 +34,34 @@ export function useWebSocket({ onSessionReady, onSessionEnded, onErrorEvent, onB
         } else if (event.type === "error") {
           const msg = event.message || event.code || "Unknown error";
           setError(msg);
+          // P10-ERR-005: retryable vs fatal classification
+          const retryable = event.retryable === true || ["SESSION_TIMEOUT", "RATE_LIMITED", "MODEL_NOT_READY"].includes(event.code);
           if (event.code === "RATE_LIMITED") {
-            // keep active
-          } else if (event.code === "SESSION_ERROR") {
+            // keep active, non-fatal
+          } else if (event.code === "SESSION_TIMEOUT") {
             setStatus(CONNECTION_STATES.IDLE);
+          } else if (event.code === "SESSION_ERROR" || event.code === "INVALID_SESSION_CONFIG") {
+            setStatus(CONNECTION_STATES.IDLE);
+          } else if (!retryable && ["UNSUPPORTED_LANGUAGE", "UNSUPPORTED_PIPELINE", "INTERNAL_ERROR"].includes(event.code)) {
+            setStatus(CONNECTION_STATES.ERROR);
           }
-          if (onErrorEvent) onErrorEvent(event);
+          if (onErrorEvent) onErrorEvent({ ...event, retryable });
         } else if (event.type === "transcript") {
+          // P10-FE-001 edge: ignore empty transcript (no speech -> remain listening without emitting)
+          if (!event.text || !event.text.trim()) return;
+          // Very short speech (single word) still valid -> emit as final coherence handled by backend
           if (onTranscript) onTranscript(event);
-          // Also set listening status when transcript flows
           setStatus(CONNECTION_STATES.LISTENING);
         } else if (event.type === "translation") {
+          if (!event.translated_text && !event.source_text) return;
           if (onTranslation) onTranslation(event);
           setStatus(CONNECTION_STATES.LISTENING);
         } else if (event.type === "audio.output.start") {
           if (onAudioStart) onAudioStart(event);
         } else if (event.type === "audio.output.end") {
           if (onAudioEnd) onAudioEnd(event);
+        } else if (event.type === "pong") {
+          // heartbeat — ignore
         } else {
           // ignore unknown
         }
@@ -55,6 +72,13 @@ export function useWebSocket({ onSessionReady, onSessionEnded, onErrorEvent, onB
       },
       onBinary: (buf) => {
         if (onBinary) onBinary(buf);
+      },
+      onClose: (ev) => {
+        // P10-FE-002: reconnect helper — if close was unexpected while active, surface error
+        if (ev && ev.code !== 1000) {
+          setError("Connection lost. Tap Try Again.");
+        }
+        setStatus(CONNECTION_STATES.DISCONNECTED);
       },
     });
     clientRef.current = client;

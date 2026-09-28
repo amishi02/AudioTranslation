@@ -79,7 +79,9 @@ class Settings(BaseSettings):
         vv = str(v).strip().lower()
         allowed = {"whisper", "faster_whisper", "faster-whisper", "mock"}
         if vv not in allowed:
-            raise ValueError(f"STT_PROVIDER must be one of {sorted(allowed)}, got '{v}'")
+            raise ValueError(
+                f"STT_PROVIDER must be one of {sorted(allowed)}, got '{v}'"
+            )
         # normalize faster_whisper variants to whisper
         if vv in {"faster_whisper", "faster-whisper"}:
             return "whisper"
@@ -104,7 +106,9 @@ class Settings(BaseSettings):
         vv = str(v).strip().lower()
         allowed = {"int8", "float16", "float32", "int8_float16", "int8_float32"}
         if vv not in allowed:
-            raise ValueError(f"STT_COMPUTE_TYPE must be one of {sorted(allowed)}, got '{v}'")
+            raise ValueError(
+                f"STT_COMPUTE_TYPE must be one of {sorted(allowed)}, got '{v}'"
+            )
         return vv
 
     @field_validator("translation_provider", mode="before")
@@ -115,7 +119,9 @@ class Settings(BaseSettings):
         vv = str(v).strip().lower()
         allowed = {"mock", "opus", "nllb"}
         if vv not in allowed:
-            raise ValueError(f"TRANSLATION_PROVIDER must be one of {sorted(allowed)}, got '{v}'")
+            raise ValueError(
+                f"TRANSLATION_PROVIDER must be one of {sorted(allowed)}, got '{v}'"
+            )
         return vv
 
     @field_validator("translation_device", mode="before")
@@ -126,7 +132,9 @@ class Settings(BaseSettings):
         vv = str(v).strip().lower()
         allowed = {"cpu", "cuda"}
         if vv not in allowed:
-            raise ValueError(f"TRANSLATION_DEVICE must be one of {sorted(allowed)}, got '{v}'")
+            raise ValueError(
+                f"TRANSLATION_DEVICE must be one of {sorted(allowed)}, got '{v}'"
+            )
         return vv
 
     @field_validator("pipeline_type", mode="before")
@@ -137,7 +145,9 @@ class Settings(BaseSettings):
         vv = str(v).strip().lower()
         allowed = {"cascaded", "unified"}
         if vv not in allowed:
-            raise ValueError(f"PIPELINE_TYPE must be one of {sorted(allowed)}, got '{v}'")
+            raise ValueError(
+                f"PIPELINE_TYPE must be one of {sorted(allowed)}, got '{v}'"
+            )
         return vv
 
     @field_validator("tts_provider", mode="before")
@@ -148,7 +158,9 @@ class Settings(BaseSettings):
         vv = str(v).strip().lower()
         allowed = {"mock", "piper", "coqui", "xtts", "vits"}
         if vv not in allowed:
-            raise ValueError(f"TTS_PROVIDER must be one of {sorted(allowed)}, got '{v}'")
+            raise ValueError(
+                f"TTS_PROVIDER must be one of {sorted(allowed)}, got '{v}'"
+            )
         # normalize xtts/vits -> piper? keep as is for now, but map coqui variants
         if vv in {"xtts", "vits"}:
             return "piper"
@@ -162,7 +174,9 @@ class Settings(BaseSettings):
         vv = str(v).strip().lower()
         allowed = {"mock", "seamless", "seamless-m4t", "seamless_streaming"}
         if vv not in allowed:
-            raise ValueError(f"UNIFIED_PROVIDER must be one of {sorted(allowed)}, got '{v}'")
+            raise ValueError(
+                f"UNIFIED_PROVIDER must be one of {sorted(allowed)}, got '{v}'"
+            )
         if vv == "seamless_streaming":
             return "seamless"
         return vv
@@ -186,7 +200,9 @@ class Settings(BaseSettings):
         vv = str(v).strip().lower()
         allowed = {"cpu", "cuda"}
         if vv not in allowed:
-            raise ValueError(f"UNIFIED_DEVICE must be one of {sorted(allowed)}, got '{v}'")
+            raise ValueError(
+                f"UNIFIED_DEVICE must be one of {sorted(allowed)}, got '{v}'"
+            )
         return vv
 
     # --- Paths ---
@@ -213,6 +229,17 @@ class Settings(BaseSettings):
     audio_queue_maxsize: int = Field(default=128, ge=1, le=1024)
     max_audio_frame_bytes: int = Field(default=65536, ge=1024, le=1048576)
     max_json_bytes: int = Field(default=65536, ge=1024, le=1048576)
+    # --- Phase 10 hardening (all env-configurable per AGENTS.md) ---
+    session_idle_timeout_ms: int = Field(default=15000, ge=5000, le=300000)
+    session_max_duration_ms: int = Field(default=600000, ge=60000, le=3600000)
+    ws_max_queue_depth: int = Field(default=64, ge=16, le=512)
+    rate_limit_frames_per_second: int = Field(default=50, ge=5, le=200)
+    rate_limit_bytes_per_second: int = Field(default=320000, ge=32000, le=2000000)
+    perf_enabled: bool = Field(default=False)
+    # STT window/perf tuning (env-configurable per AGENTS.md minimal-change)
+    stt_window_final_every_s: float = Field(default=2.5, ge=0.5, le=10.0)
+    stt_partial_throttle_ms: int = Field(default=300, ge=50, le=2000)
+    stt_live_window_s: float = Field(default=1.5, ge=0.5, le=5.0)
 
     # --- Observability ---
     metrics_enabled: bool = Field(default=False)

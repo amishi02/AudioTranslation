@@ -33,6 +33,7 @@ function App() {
   const sessionReadyRef = useRef(false);
   const pendingAudioRef = useRef([]);
 
+  const [retryableError, setRetryableError] = useState(false);
   const ws = useWebSocket({
     onSessionReady: (event) => {
       setModelLoading(false);
@@ -42,6 +43,7 @@ function App() {
       session.setSessionId(event.session_id);
       session.setConnection(CONNECTION_STATES.LISTENING);
       setWsError(null);
+      setRetryableError(false);
     },
     onSessionEnded: () => {
       setModelLoading(false);
@@ -52,11 +54,23 @@ function App() {
       playback.handleSessionEnd();
     },
     onErrorEvent: (event) => {
+      const retryable = event.retryable === true || ["SESSION_TIMEOUT", "RATE_LIMITED", "MODEL_NOT_READY"].includes(event.code);
+      setRetryableError(retryable);
+      // P10-ERR-005: fatal errors clear loading but keep banner
       setModelLoading(false);
+      if (event.code === "RATE_LIMITED") {
+        // keep active, non-fatal toast
+        setWsError(event.message || event.code);
+        return;
+      }
       sessionReadyRef.current = false;
       pendingAudioRef.current = [];
       setWsError(event.message || event.code);
-      if (event.code === "UNSUPPORTED_PIPELINE") playback.handleSessionEnd();
+      if (event.code === "UNSUPPORTED_PIPELINE" || event.code === "SESSION_TIMEOUT") playback.handleSessionEnd();
+      if (event.code === "SESSION_TIMEOUT") {
+        // allow reconnect without reload
+        session.setConnection(CONNECTION_STATES.IDLE);
+      }
     },
     onTranscript: (event) => {
       session.applyTranscriptEvent(event);
@@ -182,6 +196,7 @@ function App() {
 
   const handleDismissBanner = () => {
     setWsError(null);
+    setRetryableError(false);
     setHealthError(null);
     audio.clearError();
     setBackendHealthy(true);
@@ -189,6 +204,7 @@ function App() {
 
   const audioBanner = audio.error || (audio.micStatus === "permission_denied" ? "Microphone access is required to start translation. Allow in browser settings and try again." : null);
   const bannerMessage = wsError || audioBanner || (!backendHealthy ? healthError || "Unable to connect to translation service" : null);
+  const bannerRetryable = retryableError || wsError?.includes?.("timed out") || wsError?.includes?.("Rate limit");
 
   const wsStatus = ws.status;
   const connectionStatus = !backendHealthy
@@ -217,6 +233,7 @@ function App() {
         modelLoading={modelLoading}
         connectionError={wsError || healthError || audio.error}
         bannerMessage={bannerMessage}
+        bannerRetryable={bannerRetryable}
         onRetry={handleRetryHealth}
         onDismiss={handleDismissBanner}
         transcriptSegments={transcriptSegments}

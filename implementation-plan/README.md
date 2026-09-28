@@ -38,17 +38,17 @@ If docs conflict, the plan prefers — in order — most-specific/latest doc, ex
 | Phase 6 | Provider Abstraction, Mocks & Event Normalization | Base provider interfaces, mock STT/translation/TTS, common normalized event protocol, pipeline interface | Completed | 100% |
 | Phase 7 | Streaming STT & Transcript Stabilization | Real free/self-hosted streaming STT, partial/final handling, segment_id lifecycle, transcript stabilization, UI replacement semantics | Completed | 100% |
 | Phase 8 | Translation Layer & Cascaded Pipeline | Translation provider, partial/final translation, unstable-partial handling, cascaded STT→Translation→(TTS stub) orchestration | Completed | 100% |
-| Phase 9 | TTS & Unified Speech Translation & Pipeline Switching | TTS provider + playback, unified model evaluation & adapter, environment-configured pipeline selection, readiness gating | Not Started | 0% |
-| Phase 10 | Hardening, Performance, Testing & Production Readiness | Error taxonomy hardening, performance instrumentation, full test pyramid, E2E (cascaded + unified), benchmarking & arch decision | Not Started | 0% |
+| Phase 9 | TTS & Unified Speech Translation & Pipeline Switching | TTS provider + playback, unified model evaluation & adapter, environment-configured pipeline selection, readiness gating | Completed | 100% |
+| Phase 10 | Hardening, Performance, Testing & Production Readiness | Error taxonomy hardening, performance instrumentation, full test pyramid, E2E (cascaded + unified), benchmarking & arch decision | Completed | 100% |
 
 ## Overall Progress
 
 - Total phases: **10**
-- Completed phases: **8**
+- Completed phases: **10**
 - In-progress phases: **0**
-- Not-started phases: **2**
+- Not-started phases: **0**
 - Blocked phases: **0**
-- Overall task progress: **203 / 273 tasks (74%)**
+- Overall task progress: **273 / 273 tasks (100%)**
 
 Progress is computed from the sum of every phase's checklist. Update it whenever a phase's checklist changes.
 

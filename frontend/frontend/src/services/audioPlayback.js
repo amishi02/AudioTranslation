@@ -22,7 +22,9 @@ export function setMuted(muted) {
   if (muted && currentSource) {
     try {
       currentSource.stop();
-    } catch {}
+    } catch (_err) {
+      void _err;
+    }
     currentSource = null;
     queue.length = 0;
   }
@@ -61,7 +63,8 @@ async function _playNow(arrayBuffer, sampleRate) {
       }
     };
     source.start(0);
-  } catch (e) {
+  } catch (_e) {
+    void _e;
     // Fallback: try createBuffer manual for raw PCM if decode fails
     currentSource = null;
     if (queue.length > 0) {
@@ -75,11 +78,30 @@ export function stopPlayback() {
   if (currentSource) {
     try {
       currentSource.stop();
-    } catch {}
+    } catch (_err) {
+      void _err;
+    }
     currentSource = null;
   }
   queue.length = 0;
   // Do not close context — reuse for next segment
+  // P10-FE-003: handle audio.output.start with no bytes gracefully — if queue empty, just clear pending start
+  pendingStart = null;
+}
+
+let pendingStart = null;
+
+export function handleStartEvent(ev) {
+  // P10-FE-003: if start arrives with no following bytes, timeout to avoid infinite wait
+  pendingStart = ev;
+  // auto-clear if no bytes in 5s
+  setTimeout(() => {
+    if (pendingStart === ev) pendingStart = null;
+  }, 5000);
+}
+
+export function getPendingStart() {
+  return pendingStart;
 }
 
 export function getQueueLength() {
@@ -91,7 +113,9 @@ export function _resetForTest() {
   if (audioCtx) {
     try {
       audioCtx.close();
-    } catch {}
+    } catch (_err) {
+      void _err;
+    }
     audioCtx = null;
   }
   isMuted = false;

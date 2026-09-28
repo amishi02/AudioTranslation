@@ -4,17 +4,17 @@
 
 | Status | Count |
 |---|---:|
-| Completed | 0 |
+| Completed | 35 |
 | Partially Completed | 0 |
-| Remaining | 35 |
+| Remaining | 0 |
 | Blocked | 0 |
 | Total | 35 |
 
-Progress: 0%
+Progress: 100%
 
-Status: Not Started
+Status: Completed
 
-Last Updated: 2026-09-14
+Last Updated: 2026-09-28
 
 Related documentation: `docs/trd.md` §14-21 (TTS, unified architecture, evaluation criteria), `docs/Translation.md` §11-15/23/35-36 (unified streaming, SeamlessStreaming, candidate), `docs/srs.md` §10/26 (pipeline architecture, Unified speech translation), `docs/architecture.md` (TTS block, cascaded vs unified branches)
 
@@ -50,65 +50,65 @@ Complete the real-time audio output (TTS) and the unified/direct speech-translat
 
 ### Model Evaluation — TTS
 
-- [ ] P9-MODEL-001 Evaluate TTS candidate 1: `coqui/TTS` `XTTS-v2` or `VITS` (`coqui-ai/TTS`) — document license (MPL-2.0 / Apache-2.0 per sub-model), languages, `local_exec yes`, CPU yes (VITS fast) vs GPU helpful (XTTS), VRAM, size, latency, quality for en→hi, install via `TTS` pip or `coqui-tts` runtime
-- [ ] P9-MODEL-002 Evaluate TTS candidate 2: `ESPnet` or `piper-tts` lightweight alternative — same criteria, contrast model size vs voice naturalness
-- [ ] P9-MODEL-003 Record TTS comparison ADR/doc and select `TTS_PROVIDER`/`TTS_MODEL` (env `mock|xTTS|vits|piper`) with fallback
+- [x] P9-MODEL-001 Evaluate TTS candidate 1: `coqui/TTS` `XTTS-v2` or `VITS` (`coqui-ai/TTS`) — document license (MPL-2.0 / Apache-2.0 per sub-model), languages, `local_exec yes`, CPU yes (VITS fast) vs GPU helpful (XTTS), VRAM, size, latency, quality for en→hi, install via `TTS` pip or `coqui-tts` runtime
+- [x] P9-MODEL-002 Evaluate TTS candidate 2: `ESPnet` or `piper-tts` lightweight alternative — same criteria, contrast model size vs voice naturalness
+- [x] P9-MODEL-003 Record TTS comparison ADR/doc and select `TTS_PROVIDER`/`TTS_MODEL` (env `mock|xTTS|vits|piper`) with fallback
 
 ### Model Evaluation — Unified Speech Translation
 
-- [ ] P9-MODEL-004 Evaluate unified candidate 1: `facebook/seamless-streaming` (~2.5B streaming S2TT) — document license ⚠️ **CC-BY-NC-4.0** (non-commercial restriction), language pairs coverage (~36 as per published), STT yes, translation yes, TTS/speech-to-speech variant yes, streaming/simultaneous support native, local exec requires GPU + large VRAM (~16 GB+), size ~9 GB weights, latency target lower than cascaded, CPU fallback non-practical — flag non-commercial blocker explicitly
-- [ ] P9-MODEL-005 Evaluate unified candidate 2 (`openai/whisper-large` + HF SpeechTranslation pipeline as unified approximation, or `facebook/seamless-m4t-v2-large` non-streaming baseline) — license, streaming-fidelity, language coverage, VRAM, local feasibility
-- [ ] P9-MODEL-006 Record unified comparison doc, declare recommended unified candidate given license & local feasibility, and decide whether production selection defaults to `cascaded` until licensing/compute resolved
-- [ ] P9-MODEL-007 Document per-model env names: `UNIFIED_PROVIDER=seamless|seamless-m4t|mock`, `UNIFIED_MODEL=facebook/seamless-streaming`, `UNIFIED_DEVICE`, `UNIFIED_TARGET_SAMPLE_RATE` (often 16 kHz still)
+- [x] P9-MODEL-004 Evaluate unified candidate 1: `facebook/seamless-streaming` (~2.5B streaming S2TT) — document license ⚠️ **CC-BY-NC-4.0** (non-commercial restriction), language pairs coverage (~36 as per published), STT yes, translation yes, TTS/speech-to-speech variant yes, streaming/simultaneous support native, local exec requires GPU + large VRAM (~16 GB+), size ~9 GB weights, latency target lower than cascaded, CPU fallback non-practical — flag non-commercial blocker explicitly
+- [x] P9-MODEL-005 Evaluate unified candidate 2 (`openai/whisper-large` + HF SpeechTranslation pipeline as unified approximation, or `facebook/seamless-m4t-v2-large` non-streaming baseline) — license, streaming-fidelity, language coverage, VRAM, local feasibility
+- [x] P9-MODEL-006 Record unified comparison doc, declare recommended unified candidate given license & local feasibility, and decide whether production selection defaults to `cascaded` until licensing/compute resolved
+- [x] P9-MODEL-007 Document per-model env names: `UNIFIED_PROVIDER=seamless|seamless-m4t|mock`, `UNIFIED_MODEL=facebook/seamless-streaming`, `UNIFIED_DEVICE`, `UNIFIED_TARGET_SAMPLE_RATE` (often 16 kHz still)
 
 ### Backend — Real TTS Provider
 
-- [ ] P9-TTS-001 Implement `backend/app/providers/tts/{xtts,vits,piper}.py` `CoquiTTSProvider` (or chosen) implementing `TTSProvider {synthesize(text, lang) -> bytes}`
-- [ ] P9-TTS-002 Implement model loading (app startup or lazy on first `synthesize`) behind `initialize()` and `is_ready()`; unload on `close()`
-- [ ] P9-TTS-003 Decide audio return format: PCM S16LE 16 kHz WAV/bytes with `sample_rate` + `encoding` header in JSON marker; document why WAV is simplest for `AudioContext` playback
-- [ ] P9-TTS-004 Add stable-only synthesis policy: synthesize only `translation status=="final"` (rate-limited stable partial optional and off by default to avoid repeat-speech)
-- [ ] P9-TTS-005 Add text-chunking for long translated inputs (split >120 chars by sentence boundary) to keep synthesis latency bounded
-- [ ] P9-TTS-006 Enforce non-blocking: wrap `model.tts(text)` in `asyncio.to_thread` if synchronous
-- [ ] P9-TTS-007 Map errors: `MODEL_NOT_READY`, `TTS_ERROR` with safe messages
+- [x] P9-TTS-001 Implement `backend/app/providers/tts/{xtts,vits,piper}.py` `CoquiTTSProvider` (or chosen) implementing `TTSProvider {synthesize(text, lang) -> bytes}`
+- [x] P9-TTS-002 Implement model loading (app startup or lazy on first `synthesize`) behind `initialize()` and `is_ready()`; unload on `close()`
+- [x] P9-TTS-003 Decide audio return format: PCM S16LE 16 kHz WAV/bytes with `sample_rate` + `encoding` header in JSON marker; document why WAV is simplest for `AudioContext` playback
+- [x] P9-TTS-004 Add stable-only synthesis policy: synthesize only `translation status=="final"` (rate-limited stable partial optional and off by default to avoid repeat-speech)
+- [x] P9-TTS-005 Add text-chunking for long translated inputs (split >120 chars by sentence boundary) to keep synthesis latency bounded
+- [x] P9-TTS-006 Enforce non-blocking: wrap `model.tts(text)` in `asyncio.to_thread` if synchronous
+- [x] P9-TTS-007 Map errors: `MODEL_NOT_READY`, `TTS_ERROR` with safe messages
 
 ### Backend — Cascaded TTS Wiring
 
-- [ ] P9-PIPE-001 Wire `CascadedPipeline` post-translation: when `translation.status=="final"` and `tts_ready`, call `tts_provider.synthesize(translated_text, target_lang)` and collect `AudioOutputEvent` (JSON marker + binary payload)
-- [ ] P9-PIPE-002 Define `audio.output.start` JSON `{type:"audio.output.start", session_id, segment_id, sample_rate, encoding}` → then binary WebSocket frame(s) → then `{type:"audio.output.end", session_id, segment_id, duration_ms}`
-- [ ] P9-PIPE-003 Ensure binary audio bytes are never interleaved as JSON text; validate single WS message is either JSON or bytes (no hybrid)
-- [ ] P9-PIPE-004 Add TTS cancellation: on `session.stop` or new `segment_id final` abandon pending `synthesize` via task cancellation token
+- [x] P9-PIPE-001 Wire `CascadedPipeline` post-translation: when `translation.status=="final"` and `tts_ready`, call `tts_provider.synthesize(translated_text, target_lang)` and collect `AudioOutputEvent` (JSON marker + binary payload)
+- [x] P9-PIPE-002 Define `audio.output.start` JSON `{type:"audio.output.start", session_id, segment_id, sample_rate, encoding}` → then binary WebSocket frame(s) → then `{type:"audio.output.end", session_id, segment_id, duration_ms}`
+- [x] P9-PIPE-003 Ensure binary audio bytes are never interleaved as JSON text; validate single WS message is either JSON or bytes (no hybrid)
+- [x] P9-PIPE-004 Add TTS cancellation: on `session.stop` or new `segment_id final` abandon pending `synthesize` via task cancellation token
 
 ### Backend — Real Unified Provider & Pipeline
 
-- [ ] P9-MODEL-008 Implement `backend/app/providers/speech_translation/seamless.py` (or provider-chosen file) `SeamlessSpeechTranslationProvider` implementing `UnifiedSpeechTranslationProvider`
-- [ ] P9-MODEL-009 Implement `push_audio(session_id, pcm)` accumulation and `poll_events(session_id)` that delegates to real unified model when ready; fall back to mock when `UNIFIED_PROVIDER=mock` or model not downloaded
-- [ ] P9-PIPE-005 Update `UnifiedPipeline` to orchestrate real unified provider → normalize dual outputs (transcript + translation) plus optional audio → emit normalized `TranscriptEvent`+`TranslationEvent` (+ `AudioOutputEvent` if model produces speech bytes)
-- [ ] P9-PIPE-006 Gate unified model load on `PIPELINE_TYPE=unified` only (avoid loading ~2.5B weights when cascaded is selected)
-- [ ] P9-CFG-001 Environment: `PIPELINE_TYPE=cascaded|unified`, `UNIFIED_PROVIDER`, `UNIFIED_MODEL`, `UNIFIED_DEVICE`, `TTS_PROVIDER`, `TTS_MODEL` with invalid→`UNSUPPORTED_PIPELINE` handling
+- [x] P9-MODEL-008 Implement `backend/app/providers/speech_translation/seamless.py` (or provider-chosen file) `SeamlessSpeechTranslationProvider` implementing `UnifiedSpeechTranslationProvider`
+- [x] P9-MODEL-009 Implement `push_audio(session_id, pcm)` accumulation and `poll_events(session_id)` that delegates to real unified model when ready; fall back to mock when `UNIFIED_PROVIDER=mock` or model not downloaded
+- [x] P9-PIPE-005 Update `UnifiedPipeline` to orchestrate real unified provider → normalize dual outputs (transcript + translation) plus optional audio → emit normalized `TranscriptEvent`+`TranslationEvent` (+ `AudioOutputEvent` if model produces speech bytes)
+- [x] P9-PIPE-006 Gate unified model load on `PIPELINE_TYPE=unified` only (avoid loading ~2.5B weights when cascaded is selected)
+- [x] P9-CFG-001 Environment: `PIPELINE_TYPE=cascaded|unified`, `UNIFIED_PROVIDER`, `UNIFIED_MODEL`, `UNIFIED_DEVICE`, `TTS_PROVIDER`, `TTS_MODEL` with invalid→`UNSUPPORTED_PIPELINE` handling
 
 ### Session & Readiness
 
-- [ ] P9-BE-001 Update `SessionService` to own `pipeline` of typed branch `CascadedPipeline|UnifiedPipeline`; forward `audio_queue → pipeline.push_audio → poll → send_json/binary`
-- [ ] P9-BE-002 Expand `/health/ready` to report `{model_ready: bool, pipeline: str, stt_ready, translation_ready, tts_ready, unified_ready}` plus `pipeline_type` echo; `/api/v1/capabilities` to include actual supported pairs loud.
+- [x] P9-BE-001 Update `SessionService` to own `pipeline` of typed branch `CascadedPipeline|UnifiedPipeline`; forward `audio_queue → pipeline.push_audio → poll → send_json/binary`
+- [x] P9-BE-002 Expand `/health/ready` to report `{model_ready: bool, pipeline: str, stt_ready, translation_ready, tts_ready, unified_ready}` plus `pipeline_type` echo; `/api/v1/capabilities` to include actual supported pairs loud.
 
 ### Frontend — Audio Playback
 
-- [ ] P9-FE-001 Create `src/services/audioPlayback.js`: `playAudioBuffer(arrayBuffer, sampleRate, encoding)` using `AudioContext.decodeAudioData` or `AudioContext.createBuffer` + `createBufferSource` queue
-- [ ] P9-FE-002 Create `src/hooks/useAudioPlayback.js` queue with states `idle|playing|paused|error`, handles `audio.output.start` → create `MediaSource` buffer, `binary` frames → enqueue, `audio.output.end` → finalize enqueue
-- [ ] P9-FE-003 Handle session end / error → cancel playback queue and release `AudioContext` nodes (no leak)
-- [ ] P9-FE-004 Integrate playback into `useSessionState`+`useWebSocket` event merger so `audio.output.*` markers and bytes are reassembled
-- [ ] P9-FE-005 Add UI mute/playback indicator (playing icon or progress) and mute toggle (disables playback while keeping text pipeline)
-- [ ] P9-FE-006 Handle WebSocket binary frame dispatch: WS `onmessage` must branch `if (event.data instanceof ArrayBuffer || event.data instanceof Blob)` → playback route, else JSON → event reducer route
+- [x] P9-FE-001 Create `src/services/audioPlayback.js`: `playAudioBuffer(arrayBuffer, sampleRate, encoding)` using `AudioContext.decodeAudioData` or `AudioContext.createBuffer` + `createBufferSource` queue
+- [x] P9-FE-002 Create `src/hooks/useAudioPlayback.js` queue with states `idle|playing|paused|error`, handles `audio.output.start` → create `MediaSource` buffer, `binary` frames → enqueue, `audio.output.end` → finalize enqueue
+- [x] P9-FE-003 Handle session end / error → cancel playback queue and release `AudioContext` nodes (no leak)
+- [x] P9-FE-004 Integrate playback into `useSessionState`+`useWebSocket` event merger so `audio.output.*` markers and bytes are reassembled
+- [x] P9-FE-005 Add UI mute/playback indicator (playing icon or progress) and mute toggle (disables playback while keeping text pipeline)
+- [x] P9-FE-006 Handle WebSocket binary frame dispatch: WS `onmessage` must branch `if (event.data instanceof ArrayBuffer || event.data instanceof Blob)` → playback route, else JSON → event reducer route
 
 ### Testing
 
-- [ ] P9-TEST-001 Unit: TTS provider loads selected backend, synthesizes fixture `translated_text` → non-empty bytes, correct WAV header
-- [ ] P9-TEST-002 Unit: `CascadedPipeline` TTS wiring emits `audio.output.start` → bytes → `audio.output.end` triple for `final` translation only
-- [ ] P9-TEST-003 Unit: `UnifiedPipeline` (mock then real mock-emulation) emits transcript+translation pair and optional audio triple via normalization
-- [ ] P9-TEST-004 Integration: WS with `PIPELINE_TYPE=cascaded` + real TTS (mock TTS on CI) — push PCM fixture → receive `transcript`→`translation`→`audio.output.*` + binary bytes sequence
-- [ ] P9-TEST-005 Integration: WS with `PIPELINE_TYPE=unified` + mock unified → binary PCM → receive normalized `transcript`+`translation` (plus `audio` if mock provides) with matching `segment_id`
-- [ ] P9-TEST-006 Frontend: `audioPlayback` harness — synthesize tiny WAV fixture (or stub) plays via mocked `AudioContext` and cancels on `session.ended`
-- [ ] P9-TEST-007 Env switch test: `PIPELINE_TYPE=invalid` WS connection receives `UNSUPPORTED_PIPELINE` `error` (or HTTP config validation) rather than crash
+- [x] P9-TEST-001 Unit: TTS provider loads selected backend, synthesizes fixture `translated_text` → non-empty bytes, correct WAV header
+- [x] P9-TEST-002 Unit: `CascadedPipeline` TTS wiring emits `audio.output.start` → bytes → `audio.output.end` triple for `final` translation only
+- [x] P9-TEST-003 Unit: `UnifiedPipeline` (mock then real mock-emulation) emits transcript+translation pair and optional audio triple via normalization
+- [x] P9-TEST-004 Integration: WS with `PIPELINE_TYPE=cascaded` + real TTS (mock TTS on CI) — push PCM fixture → receive `transcript`→`translation`→`audio.output.*` + binary bytes sequence
+- [x] P9-TEST-005 Integration: WS with `PIPELINE_TYPE=unified` + mock unified → binary PCM → receive normalized `transcript`+`translation` (plus `audio` if mock provides) with matching `segment_id`
+- [x] P9-TEST-006 Frontend: `audioPlayback` harness — synthesize tiny WAV fixture (or stub) plays via mocked `AudioContext` and cancels on `session.ended`
+- [x] P9-TEST-007 Env switch test: `PIPELINE_TYPE=invalid` WS connection receives `UNSUPPORTED_PIPELINE` `error` (or HTTP config validation) rather than crash
 
 ---
 
@@ -239,13 +239,13 @@ Docs:
 
 ## 10. Acceptance Criteria
 
-- [ ] Real TTS provider (env-selected) generates playable audio for `final` translations; WS returns bracketed `audio.output.*` + binary sequence.
-- [ ] Frontend queues, decodes, and plays translated audio; playback cancels cleanly on `session.stop`/`error`.
-- [ ] At least one unified candidate evaluated with explicit **CC-BY-NC-4.0 non-commercial** note and VRAM/size; mock-unified baseline still provided.
-- [ ] Real `UnifiedProvider` (or buffered emulation if streaming API unavailable) emits normalized `transcript`/`translation` (+ optional audio) via `UnifiedPipeline`.
-- [ ] `PIPELINE_TYPE=cascaded|unified` + provider envs select pipelines correctly; frontend is unchanged; invalid selection yields `UNSUPPORTED_PIPELINE`.
-- [ ] `/health/ready` + `capabilities` reflect granular provider readiness and supported pairs per pipeline.
-- [ ] All new TTS/unified/switch tests pass (mock fallback on CI); lint/type still green.
+- [x] Real TTS provider (env-selected) generates playable audio for `final` translations; WS returns bracketed `audio.output.*` + binary sequence.
+- [x] Frontend queues, decodes, and plays translated audio; playback cancels cleanly on `session.stop`/`error`.
+- [x] At least one unified candidate evaluated with explicit **CC-BY-NC-4.0 non-commercial** note and VRAM/size; mock-unified baseline still provided.
+- [x] Real `UnifiedProvider` (or buffered emulation if streaming API unavailable) emits normalized `transcript`/`translation` (+ optional audio) via `UnifiedPipeline`.
+- [x] `PIPELINE_TYPE=cascaded|unified` + provider envs select pipelines correctly; frontend is unchanged; invalid selection yields `UNSUPPORTED_PIPELINE`.
+- [x] `/health/ready` + `capabilities` reflect granular provider readiness and supported pairs per pipeline.
+- [x] All new TTS/unified/switch tests pass (mock fallback on CI); lint/type still green.
 
 ## 11. Verification Procedure
 
@@ -306,10 +306,10 @@ npm run dev -- --host
 ## 14. Phase Completion Status
 
 - Total tasks: 35
-- Completed tasks: 0
+- Completed tasks: 35
 - Partially completed tasks: 0
-- Remaining tasks: 35
+- Remaining tasks: 0
 - Blocked tasks: 0
-- Overall progress: 0%
-- Acceptance criteria status: 0 / 7 satisfied
+- Overall progress: 100%
+- Acceptance criteria status: 7 / 7 satisfied
 

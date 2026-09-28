@@ -12,7 +12,21 @@ from app.providers.interfaces import STTProvider
 
 logger = logging.getLogger(__name__)
 
-# Segment boundary policy (P7-PIPE-003) — documented
+
+# Segment boundary policy (P7-PIPE-003) — env-configurable per P10-SEC / AGENTS.md
+# Defaults remain but overridden via settings (P10)
+def _window_final() -> float:
+    return float(getattr(settings, "stt_window_final_every_s", 2.5) or 2.5)
+
+
+def _partial_throttle() -> int:
+    return int(getattr(settings, "stt_partial_throttle_ms", 300) or 300)
+
+
+def _live_window() -> float:
+    return float(getattr(settings, "stt_live_window_s", 1.5) or 1.5)
+
+
 WINDOWED_FINAL_EVERY_S = 2.5
 SILENCE_THRESHOLD_MS = 700
 PARTIAL_THROTTLE_MS = 300
@@ -150,6 +164,7 @@ class WhisperSTTProvider(STTProvider):
         self._ready = False
         # Per-session state: {audio_buffer: bytearray, segment_id: int, last_text: str, count: int, last_partial_at: float, last_final_at: float}
         self._sessions: dict[str, dict] = {}
+
     async def initialize(self) -> None:
         async with self._model_lock:
             if self._model is not None:
@@ -255,16 +270,16 @@ class WhisperSTTProvider(STTProvider):
         if len(buf) < min_bytes:
             return []
         # Throttle
-        if (now - st["last_inference_at"]) * 1000 < PARTIAL_THROTTLE_MS:
+        if (now - st["last_inference_at"]) * 1000 < _partial_throttle():
             return []
 
         # Check if we should emit final (silence or windowed time)
         should_final = False
-        if (now - st["last_final_at"]) >= WINDOWED_FINAL_EVERY_S:
+        if (now - st["last_final_at"]) >= _window_final():
             should_final = True
 
         # Keep the live decode window short enough for CPU inference to keep up.
-        window_bytes = bytes(buf[-int(LIVE_WINDOW_S * 16000 * 2) :])
+        window_bytes = bytes(buf[-int(_live_window() * 16000 * 2) :])
         try:
             # Convert to float32 for faster-whisper
             float32 = _pcm_bytes_to_float32(window_bytes)

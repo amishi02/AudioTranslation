@@ -14,6 +14,7 @@ from app.services.pipeline.base import TranslationPipeline
 logger = logging.getLogger(__name__)
 
 # Strategy D (hybrid) params — P8-PIPE-001 tuned for multi-language visibility
+# Hard defaults; perf tuning remains env-driven where applicable via settings
 PARTIAL_RATE_LIMIT_MS = 100
 MIN_CHAR_DELTA = 1
 
@@ -73,21 +74,35 @@ class CascadedPipeline(TranslationPipeline):
         return False
 
     async def poll_events(self, session_id: str) -> list[dict | bytes]:
+        t_start = time.monotonic()
         stt_raws = await self._stt.poll_events(session_id)
+        stt_ms = (time.monotonic() - t_start) * 1000 if stt_raws else None
         events: list[dict | bytes] = []
         src_lang, tgt_lang = self._langs.get(session_id, ("en", "hi"))
         for raw in stt_raws:
             tr = normalize_transcript(raw, session_id)
-            events.append(tr.model_dump())
+            # P10-PERF-001: attach per-event perf if enabled
+            if settings.perf_enabled and stt_ms is not None:
+                tr_dump = tr.model_dump()
+                tr_dump["perf"] = {"stt_ms": round(stt_ms, 2)}
+                events.append(tr_dump)
+            else:
+                events.append(tr.model_dump())
             seg = tr.segment_id
             src = tr.text
             status = tr.status
             if not self._should_translate(src, status, seg):
                 continue
+            t_tr = time.monotonic()
             translated = await self._translation.translate(src, src_lang, tgt_lang)
+            trans_ms = (time.monotonic() - t_tr) * 1000
             # De-duplication P8-PIPE-004: skip if partial and same as last
             state = self._states.get(seg)
-            if state is not None and status == "partial" and translated == state.get("last_translation_text"):
+            if (
+                state is not None
+                and status == "partial"
+                and translated == state.get("last_translation_text")
+            ):
                 continue
             # Emit translation sharing segment_id and status (P8PIPE-003)
             trans_raw = {
@@ -98,7 +113,13 @@ class CascadedPipeline(TranslationPipeline):
                 "is_final": status == "final",
             }
             tl = normalize_translation(trans_raw, session_id)
-            events.append(tl.model_dump())
+            tl_dump = tl.model_dump()
+            if settings.perf_enabled:
+                tl_dump["perf"] = {
+                    "stt_ms": round(stt_ms or 0, 2),
+                    "translation_ms": round(trans_ms, 2),
+                }
+            events.append(tl_dump)
             # Update per-segment state P8-PIPE-002
             self._states[seg] = {
                 "last_translation_text": translated,
@@ -114,7 +135,9 @@ class CascadedPipeline(TranslationPipeline):
                     tts_bytes = await self._tts.synthesize(translated, tgt_lang)
                     # P9-PIPE-002 framing: start marker -> binary -> end marker
                     # Determine sample_rate from settings or wav header
-                    sample_rate = int(getattr(settings, "tts_sample_rate", 22050) or 22050)
+                    sample_rate = int(
+                        getattr(settings, "tts_sample_rate", 22050) or 22050
+                    )
                     # Try to parse actual rate from WAV header if piper fallback 16000
                     if tts_bytes.startswith(b"RIFF"):
                         try:

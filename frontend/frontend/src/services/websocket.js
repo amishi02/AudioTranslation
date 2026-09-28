@@ -2,7 +2,7 @@
  * WebSocket client — Phase 4 real implementation.
  * Keeps WebSocket logic out of components per AGENTS.md.
  */
-export function createWebSocketClient(wsUrl, { onEvent, onError, onBinary } = {}) {
+export function createWebSocketClient(wsUrl, { onEvent, onError, onBinary, onClose } = {}) {
   let ws = null;
   let status = "disconnected";
 
@@ -48,8 +48,9 @@ export function createWebSocketClient(wsUrl, { onEvent, onError, onBinary } = {}
         if (onError) onError(new Error("WebSocket error"));
       };
 
-      ws.onclose = () => {
+      ws.onclose = (ev) => {
         status = "disconnected";
+        if (onClose) onClose(ev);
       };
 
       return ws;

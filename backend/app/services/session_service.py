@@ -71,7 +71,9 @@ class SessionService:
         except ValueError as ve:
             # Unsupported pipeline
             raise ValueError(str(ve)) from ve
-        except ModelError as me:  # P7-BE-007/008: preserve code (UNSUPPORTED_LANGUAGE, MODEL_NOT_READY)
+        except (
+            ModelError
+        ) as me:  # P7-BE-007/008: preserve code (UNSUPPORTED_LANGUAGE, MODEL_NOT_READY)
             raise ValueError(f"{me.code}: {me}") from me
         except Exception as e:
             raise ValueError(f"MODEL_ERROR: {e}") from e

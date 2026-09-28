@@ -43,8 +43,8 @@ make dev-frontend  # → http://localhost:5173
 
 ## Environment
 
-- `backend/.env.example` — `APP_NAME`, `APP_ENV`, `LOG_LEVEL`, `HOST`, `PORT`, `CORS_ORIGINS`; Phase 2+ placeholders commented (`PIPELINE_TYPE`, `STT_PROVIDER`, etc.). Never commit `.env`.
-- `frontend/frontend/.env.example` — `VITE_API_BASE_URL=http://localhost:8000`, `VITE_WS_URL=ws://localhost:8000/ws/v1/translate`.
+- `backend/.env.example` — all dynamic values env-configurable per AGENTS.md: `APP_*`, `HOST/PORT`, `CORS_ORIGINS`, `WS_V1_PATH`, `PIPELINE_TYPE`, `STT_*`, `TRANSLATION_*`, `TTS_*`, `UNIFIED_*`, `AUDIO_*`, `SESSION_IDLE_TIMEOUT_MS`, `SESSION_MAX_DURATION_MS`, `WS_MAX_QUEUE_DEPTH`, `RATE_LIMIT_*`, `PERF_ENABLED`, `METRICS_ENABLED`. Never commit `.env`.
+- `frontend/frontend/.env.example` — `VITE_API_BASE_URL`, `VITE_WS_URL`, `VITE_WS_URL` must match `WS_V1_PATH`.
 - All env is loaded via `pydantic-settings` (backend) and `import.meta.env` (frontend) — see `backend/app/core/config.py` and `frontend/frontend/src/config/environment.js`.
 
 ## Development Commands
@@ -63,12 +63,13 @@ cd backend && .venv/bin/ruff check . && .venv/bin/ruff format --check . && .venv
 cd frontend/frontend && npm run lint && npm run build
 ```
 
-## Architecture
+## Architecture (Phase 10 Current)
 
-- See `docs/architecture.md` for Phase 1 scope and system diagram.
-- See `docs/trd.md` for cascaded vs unified pipeline, provider abstraction.
-- See `docs/websocket-protocol.md` for `/ws/v1/translate` contract.
-- See `implementation-plan/README.md` for phased implementation order and progress tracking.
+- See `docs/architecture.md` for full Phase 10 system diagram (dual pipelines, metrics, timeout, rate-limit).
+- See `docs/trd.md` / `docs/srs.md` / `docs/prd.md` for requirements; implementation behind provider abstractions.
+- See `docs/websocket-protocol.md` for `/ws/v1/translate` contract (12 error codes, PCM framing, TTS markers, metrics).
+- See `docs/benchmark.md` and `docs/adr/ADR-001-pipeline-selection.md` for cascaded vs unified decision (cascaded default, CC-BY-NC-4.0 caveat).
+- See `implementation-plan/README.md` for phased implementation order and progress tracking (10 phases complete, 100%).
 
 ## Code Quality
 

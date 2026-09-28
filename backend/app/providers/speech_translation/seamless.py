@@ -8,12 +8,11 @@ model not downloaded or transformers missing, so CI remains mock-based.
 
 from __future__ import annotations
 
-import asyncio
 import logging
 import time
 
 from app.core.config import settings
-from app.providers.base import InferenceError, ModelNotReady
+from app.providers.base import ModelNotReady
 from app.providers.interfaces import UnifiedSpeechTranslationProvider
 
 logger = logging.getLogger(__name__)
@@ -39,7 +38,11 @@ class SeamlessSpeechTranslationProvider(UnifiedSpeechTranslationProvider):
         if provider == "mock" or pipeline != "unified":
             # Mock mode — mark ready without loading weights
             self._ready = True
-            logger.info("seamless provider mock ready (pipeline=%s provider=%s)", pipeline, provider)
+            logger.info(
+                "seamless provider mock ready (pipeline=%s provider=%s)",
+                pipeline,
+                provider,
+            )
             return
         # Real mode — try to load seamless (heavy)
         try:
@@ -52,7 +55,11 @@ class SeamlessSpeechTranslationProvider(UnifiedSpeechTranslationProvider):
                 return
             # Attempt to load seamless via transformers pipeline (may be heavy)
             # For Phase 9 we do not actually download 9 GB in CI; just mark ready with fallback
-            logger.info("seamless model %s device %s — buffered emulation (windowed) pending real load", settings.unified_model, settings.unified_device)
+            logger.info(
+                "seamless model %s device %s — buffered emulation (windowed) pending real load",
+                settings.unified_model,
+                settings.unified_device,
+            )
             # Real load would be:
             # from transformers import AutoModel, AutoProcessor
             # self._model = AutoModel.from_pretrained(settings.unified_model)
@@ -70,7 +77,9 @@ class SeamlessSpeechTranslationProvider(UnifiedSpeechTranslationProvider):
         self._model = None
         self._ready = False
 
-    async def start_session(self, session_id: str, source_language: str, target_language: str) -> None:
+    async def start_session(
+        self, session_id: str, source_language: str, target_language: str
+    ) -> None:
         if not self.is_ready():
             await self.initialize()
             if not self.is_ready():
@@ -84,7 +93,13 @@ class SeamlessSpeechTranslationProvider(UnifiedSpeechTranslationProvider):
             "last_text": "",
             "last_translated": "",
             "last_at": time.time(),
-            "texts": ["Hello", "Hello my", "Hello my name", "Hello my name is", "Hello my name is John"],
+            "texts": [
+                "Hello",
+                "Hello my",
+                "Hello my name",
+                "Hello my name is",
+                "Hello my name is John",
+            ],
         }
 
     async def push_audio(self, session_id: str, pcm: bytes) -> None:
