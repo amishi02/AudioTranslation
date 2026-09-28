@@ -68,6 +68,82 @@ Models are **downloaded on first use** (lazy per-pair for Opus-MT, lazy for Whis
 
 Runtime: `react@19.2.8`, `react-dom@19.2.8`. Dev: `vite@8`, `vitest@3`, `jsdom@26`, `@testing-library/react@16`/`jest-dom@6`/`user-event@14`, `eslint@10` + `eslint-plugin-react-hooks/refresh`, `@vitejs/plugin-react@6`. See `frontend/frontend/package.json`.
 
+## Models & Local Downloads
+
+All models are **open-source / free, self-hosted** (no paid APIs per `AGENTS.md`). Weights are **downloaded once on first use**, then cached locally and used offline. No code change needed to switch models — only `.env` (`backend/app/core/config.py` → `ProviderFactory` → interface).
+
+| Role | Provider (`*_PROVIDER`) | Model (`*_MODEL`) | Env Example | Size | Local Path | Download Trigger |
+|---|---|---|---|---|---|---|
+| STT | `whisper` (via `faster-whisper` + `ctranslate2`) | `tiny` (39M), `base` (74M), `small` (244M) — `openai/whisper-*` | `STT_MODEL=tiny` `STT_DEVICE=cpu` `STT_COMPUTE_TYPE=int8` | tiny ~150 MB, base ~300 MB | `~/.cache/huggingface/hub/` + `~/.cache/huggingface/hub/models--Systran--faster-whisper-*` or `ctranslate2` cache | `WhisperModel(STT_MODEL, device, compute_type)` on first `startSession` (`backend/app/providers/stt/whisper.py:171`) |
+| Translation | `opus` (Helsinki-NLP Marian) | `Helsinki-NLP/opus-mt-{src}-{tgt}` per pair (e.g., `opus-mt-en-hi`, `opus-mt-es-en`)  | `TRANSLATION_MODEL=Helsinki-NLP/opus-mt-{src}-{tgt}` `TRANSLATION_DEVICE=cpu` | ~300 MB per pair | `~/.cache/huggingface/hub/models--Helsinki-NLP--opus-mt-*` | `AutoTokenizer/ AutoModelForSeq2SeqLM.from_pretrained(name)` on first `translate(src→tgt)` per pair (`backend/app/providers/translation/opus.py:132`), pivot via `en` for `hi↔es/fr/de` (20 pairs, 8 direct + 12 pivoted) |
+| Alternative Translation | `nllb` | `facebook/nllb-200-distilled-600M` | `TRANSLATION_PROVIDER=nllb` | ~2.4 GB | `~/.cache/huggingface/hub/models--facebook--nllb-*` | same `from_pretrained` path |
+| TTS | `piper` (ONNX, MIT, CPU real-time) | `piper:en_US-lessac-medium` etc. per voice, `VOICE_MAP` in `app/providers/tts/piper.py:16` | `TTS_MODEL=piper:en_US-lessac-medium` `TTS_DEVICE=cpu` | <50 MB per voice | `~/.cache/piper` or `models/` ONNX | `piper` ONNX load on first `synthesize` |
+| Unified (opt-in) | `seamless` (`facebook/seamless-streaming`, CC-BY-NC-4.0 ⚠️) | `facebook/seamless-streaming` (~2.5B) | `PIPELINE_TYPE=unified` `UNIFIED_MODEL=facebook/seamless-streaming` | ~9 GB | `~/.cache/huggingface/hub/models--facebook--seamless-*` | `AutoModel.from_pretrained` in `speech_translation/seamless.py` (mock fallback if `UNIFIED_PROVIDER=mock`) |
+
+**Default env (ships in `backend/.env.example` → `backend/.env`):**
+
+```
+PIPELINE_TYPE=cascaded
+STT_PROVIDER=whisper  STT_MODEL=tiny  STT_DEVICE=cpu  STT_COMPUTE_TYPE=int8
+TRANSLATION_PROVIDER=opus  TRANSLATION_MODEL=Helsinki-NLP/opus-mt-{src}-{tgt}
+TTS_PROVIDER=mock     TTS_MODEL=piper:en_US-lessac-medium
+UNIFIED_PROVIDER=mock UNIFIED_MODEL=facebook/seamless-streaming
+```
+
+Switch by editing only `.env`: e.g., `STT_MODEL=base` (better multilingual, +150 MB), `TRANSLATION_PROVIDER=nllb`, `TTS_PROVIDER=piper`, `PIPELINE_TYPE=unified` — no code edits.
+
+#### Pre-download locally (recommended before first session)
+
+```bash
+source backend/.venv/bin/activate
+# 1. STT — tiny (default) or base
+python -c "from faster_whisper import WhisperModel; WhisperModel('tiny', device='cpu', compute_type='int8')"
+# or base: python -c "from faster_whisper import WhisperModel; WhisperModel('base', device='cpu', compute_type='int8')"
+
+# 2. Translation — each pair you need (example en->hi, es->en)
+python -c "from transformers import AutoTokenizer, AutoModelForSeq2SeqLM; n='Helsinki-NLP/opus-mt-en-hi'; AutoTokenizer.from_pretrained(n); AutoModelForSeq2SeqLM.from_pretrained(n)"
+python -c "from transformers import AutoTokenizer, AutoModelForSeq2SeqLM; n='Helsinki-NLP/opus-mt-es-en'; AutoTokenizer.from_pretrained(n); AutoModelForSeq2SeqLM.from_pretrained(n)"
+# Alternative: huggingface-cli (if installed): huggingface-cli download Helsinki-NLP/opus-mt-en-hi
+
+# 3. TTS Piper voice (if TTS_PROVIDER=piper)
+# piper binary must be installed separately; mock TTS needs no download
+
+# 4. (Opt-in) Unified — large, GPU recommended
+# python -c "from transformers import AutoModel; AutoModel.from_pretrained('facebook/seamless-streaming', trust_remote_code=True)"
+```
+
+#### Verify cache
+
+```bash
+ls -lh ~/.cache/huggingface/hub/ | grep -E "faster-whisper|opus-mt|nllb"
+du -sh ~/.cache/huggingface/hub/models--Helsinki-NLP--opus-mt-* 2>/dev/null
+du -sh ~/.cache/huggingface/hub/models--Systran--faster-whisper-* 2>/dev/null
+# Or via Python
+python -c "from huggingface_hub import scan_cache_dir; print(scan_cache_dir().size_on_disk_str)"
+```
+
+#### Run fully offline after first download
+
+```bash
+HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 make dev-backend
+# or: HF_HUB_OFFLINE=1 .venv/bin/uvicorn app.main:app --reload
+```
+
+`HEAD https://huggingface.co/... 404` / `302` / `307` logs during first download are normal probes (`safetensors` vs `pytorch_model.bin`, etag cache check) from `huggingface_hub`/`httpx` — weights cached thereafter, no re-download (see `opus.py:132` / `whisper.py:171` path).
+
+#### Updating / Clearing
+
+```bash
+# Remove a single model to re-download
+rm -rf ~/.cache/huggingface/hub/models--Helsinki-NLP--opus-mt-en-hi
+# Clear all
+rm -rf ~/.cache/huggingface/hub
+# Custom location
+HF_HOME=/data/hf_cache make dev-backend   # or export HF_HOME=/data/hf_cache
+```
+
+See `docs/models/stt-evaluation.md`, `translation-evaluation.md`, `tts-evaluation.md`, `unified-evaluation.md` for per-model latency/quality/VRAM trade-offs and `docs/adr/ADR-001-pipeline-selection.md` for cascaded default rationale.
+
 ## Running
 
 Two terminals:
