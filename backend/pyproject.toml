@@ -3,7 +3,35 @@ name = "realtime-translation-backend"
 version = "0.1.0"
 description = "Real-Time Audio Translation API"
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+  "fastapi>=0.141",
+  "uvicorn[standard]>=0.53",
+  "starlette>=0.40",
+  "pydantic>=2.13",
+  "pydantic-settings>=2.15",
+  "websockets>=17.1",
+  "httpx>=0.28",
+  "huggingface_hub>=1.31",
+  "transformers>=5.17",
+  "sentencepiece>=0.2",
+  "tokenizers>=0.23",
+  "faster-whisper>=1.2",
+  "ctranslate2>=4.8",
+  "onnxruntime>=1.30",
+  "torch>=2.14",
+  "numpy>=2.5",
+  "av>=18.1",
+  "sounddevice>=0.5",
+  "python-dotenv>=1.2",
+  "tqdm>=4.70",
+  "safetensors>=0.8",
+  "regex>=2026.9",
+  "anyio>=4.15",
+  "pytest>=9.1",
+  "pytest-asyncio>=1.4",
+  "ruff>=0.16",
+  "mypy>=2.3",
+]
 
 [tool.ruff]
 target-version = "py311"
